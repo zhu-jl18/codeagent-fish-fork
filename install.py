@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -110,13 +111,24 @@ def _install_prompts(install_dir: Path, *, force: bool) -> None:
         _write_if_missing(codeagent_dir / f"{backend}-prompt.md", "", force=force)
 
 
+def _get_artifact_name() -> str:
+    """Get the correct artifact name for the current platform."""
+    system = platform.system()
+    if system == "Windows":
+        return "codeagent-wrapper-windows-amd64.exe"
+    elif system == "Darwin":
+        return "codeagent-wrapper-darwin-arm64"
+    else:
+        return "codeagent-wrapper-linux-amd64"
+
+
 def _copy_prebuilt_wrapper(install_dir: Path, *, force: bool) -> Path:
     bin_dir = install_dir / "bin"
     _ensure_dir(bin_dir)
     exe_name = "codeagent-wrapper.exe" if os.name == "nt" else "codeagent-wrapper"
     out = bin_dir / exe_name
 
-    artifact_name = "codeagent-wrapper-windows-amd64.exe" if os.name == "nt" else "codeagent-wrapper-linux-amd64"
+    artifact_name = _get_artifact_name()
     artifact = REPO_ROOT / "dist" / artifact_name
     if not artifact.exists():
         raise FileNotFoundError(f"missing prebuilt artifact: {artifact}")
@@ -131,6 +143,56 @@ def _copy_prebuilt_wrapper(install_dir: Path, *, force: bool) -> Path:
         except OSError:
             pass
     return out
+
+
+def _get_shell_config_path() -> str | None:
+    """Detect shell type and return config file path."""
+    shell = os.environ.get("SHELL", "")
+    home = Path.home()
+
+    if "zsh" in shell:
+        return str(home / ".zshrc")
+    elif "bash" in shell:
+        # macOS uses .bash_profile, Linux uses .bashrc
+        if sys.platform == "darwin":
+            return str(home / ".bash_profile")
+        return str(home / ".bashrc")
+    elif "fish" in shell:
+        return str(home / ".config" / "fish" / "config.fish")
+    return None
+
+
+def _print_path_hint(bin_path: Path) -> None:
+    """Print PATH setup instructions based on platform and shell."""
+    print("")
+    print("PATH setup:")
+
+    if os.name == "nt":
+        # Windows
+        print("  Add to PATH manually:")
+        print("  1. Open System Properties > Environment Variables")
+        print("  2. Edit 'Path' under User variables")
+        print(f"  3. Add: {bin_path}")
+        print("")
+        print("  Or run in PowerShell (current user):")
+        print(f'  [Environment]::SetEnvironmentVariable("Path", $env:Path + ";{bin_path}", "User")')
+    else:
+        # Linux / macOS
+        shell_config = _get_shell_config_path()
+        shell = os.environ.get("SHELL", "").split("/")[-1] or "sh"
+
+        if "fish" in shell:
+            export_cmd = f'set -gx PATH $PATH "{bin_path}"'
+        else:
+            export_cmd = f'export PATH="$PATH:{bin_path}"'
+
+        print(f"  {export_cmd}")
+        print("")
+        if shell_config:
+            print(f"  To persist, add to {shell_config}:")
+            print(f"  echo '{export_cmd}' >> {shell_config}")
+        else:
+            print("  Add the export command to your shell config file to persist.")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -191,6 +253,9 @@ def main(argv: list[str] | None = None) -> int:
         print("Note:")
         print(f"- You used a non-default install dir.")
         print(f"- Set CODEAGENT_CLAUDE_DIR={install_dir} so codeagent-wrapper can find prompts/settings.")
+
+    if wrapper_path is not None:
+        _print_path_hint(install_dir / "bin")
 
     return 0
 
