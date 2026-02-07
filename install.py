@@ -11,6 +11,7 @@ Installs:
 
 Targets:
 - WSL2/Linux
+- macOS (Apple Silicon)
 - Windows
 """
 
