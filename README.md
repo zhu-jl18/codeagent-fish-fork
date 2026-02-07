@@ -14,7 +14,7 @@
 你不会得到什么：
 - upstream 里那套 agent 映射/复杂编排（已刻意移除）
 
-## 安装（WSL2/Linux + Windows）
+## 安装（WSL2/Linux + macOS + Windows）
 
 最推荐的安装方式：直接复制 `./dist` 的编译产物（安装时不需要 Go）。
 
@@ -38,7 +38,7 @@ python3 install.py --skip-wrapper
 - `~/.claude/bin/fish-agent-wrapper`（Windows 上是 `.exe`）
 
 提示：
-- 在 WSL 里运行 `install.py` 会安装 Linux wrapper；在 Windows 里运行 `install.py` 会安装 Windows `.exe`。
+- 在 WSL 里运行 `install.py` 会安装 Linux wrapper；在 macOS（Apple Silicon）里运行会安装 Darwin arm64 wrapper；在 Windows 里运行会安装 Windows `.exe`。
 - 如果你使用了非默认目录，请设置 `FISH_AGENT_WRAPPER_CLAUDE_DIR` 指向你的目录。
 
 ## 维护（重新编译 dist 二进制）
@@ -49,6 +49,7 @@ bash scripts/build-dist.sh
 
 产物：
 - `dist/fish-agent-wrapper-linux-amd64`
+- `dist/fish-agent-wrapper-darwin-arm64`
 - `dist/fish-agent-wrapper-windows-amd64.exe`
 
 ## Prompt 注入（默认开启；空文件 = 等价不注入）

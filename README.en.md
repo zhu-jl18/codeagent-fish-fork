@@ -13,7 +13,7 @@ What you get:
 - `product-requirements` skill (PRD generator)
 - `fish-agent-wrapper` (Go executor; backends: `codex` / `claude` / `gemini`; core: `--parallel`)
 
-## Install (WSL2/Linux + Windows)
+## Install (WSL2/Linux + macOS + Windows)
 
 ```bash
 python3 install.py
@@ -46,6 +46,7 @@ bash scripts/build-dist.sh
 
 This produces:
 - `dist/fish-agent-wrapper-linux-amd64`
+- `dist/fish-agent-wrapper-darwin-arm64`
 - `dist/fish-agent-wrapper-windows-amd64.exe`
 
 ## Prompt Injection (Default-On, Empty = No-Op)
