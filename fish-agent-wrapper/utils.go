@@ -114,7 +114,7 @@ func defaultPromptFileForBackend(backendName string) string {
 	}
 
 	switch backend {
-	case "codex", "claude", "gemini":
+	case "codex", "claude", "gemini", "ampcode":
 		return filepath.Join(base, "fish-agent-wrapper", backend+"-prompt.md")
 	default:
 		return ""

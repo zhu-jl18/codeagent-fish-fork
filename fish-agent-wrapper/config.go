@@ -62,9 +62,10 @@ type TaskResult struct {
 }
 
 var backendRegistry = map[string]Backend{
-	"codex":    CodexBackend{},
-	"claude":   ClaudeBackend{},
-	"gemini":   GeminiBackend{},
+	"codex":   CodexBackend{},
+	"claude":  ClaudeBackend{},
+	"gemini":  GeminiBackend{},
+	"ampcode": AmpcodeBackend{},
 }
 
 func selectBackend(name string) (Backend, error) {

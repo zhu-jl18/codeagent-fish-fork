@@ -1,13 +1,13 @@
 ---
 name: fish-agent-wrapper
-description: Execute fish-agent-wrapper for multi-backend AI code tasks. Supports Codex, Claude, Gemini, with file references (@syntax) and structured output.
+description: Execute fish-agent-wrapper for multi-backend AI code tasks. Supports Codex, Claude, Gemini, Ampcode, with file references (@syntax) and structured output.
 ---
 
 # fish-agent-wrapper Integration
 
 ## Overview
 
-Execute fish-agent-wrapper commands with pluggable AI backends(Codex, Claude, Gemini). Supports file references via `@` syntax, parallel task execution with backend selection, and configurable security controls.
+Execute fish-agent-wrapper commands with pluggable AI backends(Codex, Claude, Gemini, Ampcode). Supports file references via `@` syntax, parallel task execution with backend selection, and configurable security controls.
 
 ## When to Use
 
@@ -35,6 +35,7 @@ EOF
 ```bash
 fish-agent-wrapper --backend codex "simple task" [working_dir]
 fish-agent-wrapper --backend gemini "simple task" [working_dir]
+fish-agent-wrapper --backend ampcode "simple task" [working_dir]
 ```
 
 ## Backends
@@ -44,6 +45,7 @@ fish-agent-wrapper --backend gemini "simple task" [working_dir]
 | codex | `--backend codex` | OpenAI Codex (default) | Code analysis, complex development |
 | claude | `--backend claude` | Anthropic Claude | Quick fixes, documentation, prompts |
 | gemini | `--backend gemini` | Google Gemini | UI/UX prototyping |
+| ampcode | `--backend ampcode` | Amp CLI backend | Review tasks |
 
 ### Backend Selection Guide
 
@@ -65,6 +67,10 @@ fish-agent-wrapper --backend gemini "simple task" [working_dir]
 - Interactive element generation with accessibility support
 - Example: "Create a responsive dashboard layout with sidebar navigation and data visualization cards"
 
+**Ampcode**:
+- Standard backend option for tasks that specify `--backend ampcode`
+- Example: "Review @.claude/specs/auth/dev-plan.md"
+
 **Backend Switching**:
 - Start with Codex for analysis, switch to Claude for documentation, then Gemini for UI implementation
 - Use per-task backend selection in parallel mode to optimize for each task's strengths
@@ -73,7 +79,7 @@ fish-agent-wrapper --backend gemini "simple task" [working_dir]
 
 - `task` (required): Task description, supports `@file` references
 - `working_dir` (optional): Working directory (default: current)
-- `--backend` (required): Select AI backend (codex/claude/gemini)
+- `--backend` (required): Select AI backend (codex/claude/gemini/ampcode)
 
 ## Return Format
 
@@ -94,6 +100,11 @@ EOF
 
 # Resume with specific backend
 fish-agent-wrapper --backend claude resume <session_id> - <<'EOF'
+<follow-up task>
+EOF
+
+# Resume with ampcode backend
+fish-agent-wrapper --backend ampcode resume <session_id> - <<'EOF'
 <follow-up task>
 EOF
 ```
@@ -152,6 +163,8 @@ generate implementation code
 EOF
 ```
 
+If review/retry task is needed, set `backend: ampcode` for that task.
+
 **Concurrency Control**:
 Set `FISH_AGENT_WRAPPER_MAX_PARALLEL_WORKERS` to limit concurrent tasks (default: unlimited).
 
@@ -163,6 +176,7 @@ Set `FISH_AGENT_WRAPPER_MAX_PARALLEL_WORKERS` to limit concurrent tasks (default
   - Set `FISH_AGENT_WRAPPER_SKIP_PERMISSIONS=false` to keep Claude permission prompts
 - `FISH_AGENT_WRAPPER_MAX_PARALLEL_WORKERS`: Limit concurrent tasks in parallel mode (default: unlimited, recommended: 8)
 - `FISH_AGENT_WRAPPER_CLAUDE_DIR`: Override the base Claude config dir (default: `~/.claude`)
+- `FISH_AGENT_WRAPPER_AMPCODE_MODE`: Set Ampcode mode (`smart|deep|rush|free`, default: `smart`)
 
 ## Invocation Pattern
 
@@ -175,7 +189,7 @@ Bash tool parameters:
 - timeout: 7200000
 - description: <brief description>
 
-Note: `--backend` is recommended; supported values: `codex | claude | gemini` (default: `codex`)
+Note: `--backend` is recommended; supported values: `codex | claude | gemini | ampcode` (default: `codex`)
 ```
 
 **Parallel Tasks**:
@@ -234,3 +248,4 @@ Note: Global --backend is required; per-task backend is optional
 - Multi-backend support for all modes (workdir, resume, parallel)
 - Security controls with configurable permission checks
 - Concurrency limits with worker pool and fail-fast cancellation
+- Ampcode backend support for new/resume/parallel execution

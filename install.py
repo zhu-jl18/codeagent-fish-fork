@@ -28,7 +28,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent
 DEFAULT_INSTALL_DIR = "~/.claude"
 
-BACKENDS = ("codex", "claude", "gemini")
+BACKENDS = ("codex", "claude", "gemini", "ampcode")
 
 CLAUDE_BLOCK_BEGIN = "<!-- BEGIN FISH-AGENT-WRAPPER:MANAGED -->"
 CLAUDE_BLOCK_END = "<!-- END FISH-AGENT-WRAPPER:MANAGED -->"

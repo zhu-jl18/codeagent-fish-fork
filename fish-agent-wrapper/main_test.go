@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"sync"
@@ -1205,6 +1206,16 @@ func TestBackendParseArgs_BackendFlag(t *testing.T) {
 			want: "gemini",
 		},
 		{
+			name: "ampcode backend",
+			args: []string{"fish-agent-wrapper", "--backend", "ampcode", "task"},
+			want: "ampcode",
+		},
+		{
+			name: "ampcode resume",
+			args: []string{"fish-agent-wrapper", "--backend", "ampcode", "resume", "T-abc", "task"},
+			want: "ampcode",
+		},
+		{
 			name: "backend equals syntax",
 			args: []string{"fish-agent-wrapper", "--backend=claude", "task"},
 			want: "claude",
@@ -1627,6 +1638,7 @@ func TestRun_DefaultPromptInjectionPrefixesTask(t *testing.T) {
 	}{
 		{name: "codex injects", backend: "codex", prompt: "LINE1\nLINE2\n", wantPrefix: true},
 		{name: "claude injects", backend: "claude", prompt: "P\n", wantPrefix: true},
+		{name: "ampcode injects", backend: "ampcode", prompt: "REVIEW\n", wantPrefix: true},
 		{name: "gemini empty is no-op", backend: "gemini", prompt: "   \n", wantPrefix: false},
 	}
 
@@ -1794,6 +1806,7 @@ func TestBackendSelectBackend(t *testing.T) {
 		{"codex", "codex", CodexBackend{}},
 		{"claude mixed case", "ClAuDe", ClaudeBackend{}},
 		{"gemini", "gemini", GeminiBackend{}},
+		{"ampcode", "ampcode", AmpcodeBackend{}},
 	}
 
 	for _, tt := range tests {
@@ -1814,6 +1827,10 @@ func TestBackendSelectBackend(t *testing.T) {
 			case GeminiBackend:
 				if _, ok := got.(GeminiBackend); !ok {
 					t.Fatalf("expected GeminiBackend, got %T", got)
+				}
+			case AmpcodeBackend:
+				if _, ok := got.(AmpcodeBackend); !ok {
+					t.Fatalf("expected AmpcodeBackend, got %T", got)
 				}
 			}
 		})
@@ -1936,8 +1953,25 @@ func TestGeminiBackendBuildArgs_OutputValidation(t *testing.T) {
 	}
 }
 
+func TestBackendBuildArgs_AmpcodeBackend(t *testing.T) {
+	backend := AmpcodeBackend{}
+	t.Setenv("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS", "false")
+	cfg := &Config{Mode: "new"}
+	got := backend.BuildArgs(cfg, "task")
+	want := []string{"--no-color", "--no-notifications", "--execute", "--stream-json", "--mode", "smart", "task"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("BuildArgs() mismatch:\ngot: %v\nwant: %v", got, want)
+	}
+
+	resumeCfg := &Config{Mode: "resume", SessionID: "T-1"}
+	resumeArgs := backend.BuildArgs(resumeCfg, "task")
+	if !strings.Contains(" "+strings.Join(resumeArgs, " ")+" ", " threads continue T-1 ") {
+		t.Fatalf("resume args missing thread continue: %v", resumeArgs)
+	}
+}
+
 func TestBackendNamesAndCommands(t *testing.T) {
-	tests := []Backend{CodexBackend{}, ClaudeBackend{}, GeminiBackend{}}
+	tests := []Backend{CodexBackend{}, ClaudeBackend{}, GeminiBackend{}, AmpcodeBackend{}}
 	expected := []struct {
 		name    string
 		command string
@@ -1945,6 +1979,7 @@ func TestBackendNamesAndCommands(t *testing.T) {
 		{"codex", "codex"},
 		{"claude", "claude"},
 		{"gemini", "gemini"},
+		{"ampcode", "amp"},
 	}
 
 	for i, backend := range tests {
@@ -2249,6 +2284,43 @@ func TestBackendParseJSONStream_OnComplete_GeminiTerminalResultStatus(t *testing
 	}
 	if threadID != "g-1" {
 		t.Fatalf("threadID = %q, want g-1", threadID)
+	}
+	if onMessageCalls != 1 {
+		t.Fatalf("onMessage calls = %d, want 1", onMessageCalls)
+	}
+	if onCompleteCalls != 1 {
+		t.Fatalf("onComplete calls = %d, want 1", onCompleteCalls)
+	}
+}
+
+func TestBackendParseJSONStream_AmpcodeAssistantMessage(t *testing.T) {
+	input := `{"type":"assistant","session_id":"T-amp-1","message":{"content":[{"type":"text","text":"hello "},{"type":"tool_use","name":"bash"},{"type":"text","text":"amp"}]}}`
+
+	message, threadID := parseJSONStream(strings.NewReader(input))
+	if message != "hello amp" {
+		t.Fatalf("message=%q, want %q", message, "hello amp")
+	}
+	if threadID != "T-amp-1" {
+		t.Fatalf("threadID=%q, want %q", threadID, "T-amp-1")
+	}
+}
+
+func TestBackendParseJSONStream_OnComplete_AmpcodeDone(t *testing.T) {
+	input := `{"type":"assistant","session_id":"T-amp-2","message":{"content":[{"type":"text","text":"review done"}]}}` + "\n" +
+		`{"type":"done","session_id":"T-amp-2"}`
+
+	var onMessageCalls int
+	var onCompleteCalls int
+	message, threadID := parseJSONStreamInternal(strings.NewReader(input), nil, nil, func() {
+		onMessageCalls++
+	}, func() {
+		onCompleteCalls++
+	})
+	if message != "review done" {
+		t.Fatalf("message = %q, want review done", message)
+	}
+	if threadID != "T-amp-2" {
+		t.Fatalf("threadID = %q, want T-amp-2", threadID)
 	}
 	if onMessageCalls != 1 {
 		t.Fatalf("onMessage calls = %d, want 1", onMessageCalls)

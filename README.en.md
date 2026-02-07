@@ -11,7 +11,7 @@ Fork notice:
 What you get:
 - `/dev` workflow (requirements -> plan -> parallel execution -> verification)
 - `product-requirements` skill (PRD generator)
-- `fish-agent-wrapper` (Go executor; backends: `codex` / `claude` / `gemini`; core: `--parallel`)
+- `fish-agent-wrapper` (Go executor; backends: `codex` / `claude` / `gemini` / `ampcode`; core: `--parallel`)
 
 ## Install (WSL2/Linux + macOS + Windows)
 
@@ -55,6 +55,7 @@ Default prompt placeholder files:
 - `~/.claude/fish-agent-wrapper/codex-prompt.md`
 - `~/.claude/fish-agent-wrapper/claude-prompt.md`
 - `~/.claude/fish-agent-wrapper/gemini-prompt.md`
+- `~/.claude/fish-agent-wrapper/ampcode-prompt.md`
 
 Behavior:
 - Wrapper loads the per-backend prompt and prepends it only if it has non-empty content.

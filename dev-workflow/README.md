@@ -32,7 +32,8 @@ Done (generate summary)
   - `codex` - Stable, high quality, best cost-performance (default for most tasks)
   - `claude` - Fast, lightweight (for quick fixes and config changes)
   - `gemini` - UI/UX specialist (for frontend styling and components)
-- If user selects ONLY `codex`, ALL subsequent tasks must use `codex` (including UI/quick-fix)
+  - `ampcode` - Additional backend (Amp CLI)
+- If user selects ONLY `codex`, ALL subsequent tasks must use `codex` (including UI/quick-fix/review)
 
 ### 1. Clarify Requirements
 - Use **AskUserQuestion** to ask the user directly
@@ -42,7 +43,7 @@ Done (generate summary)
 ### 2. fish-agent-wrapper Analysis + Task Typing + UI Detection
 - Call fish-agent-wrapper to analyze the request in plan mode style
 - Extract: core functions, technical points, task list (2–5 items)
-- For each task, assign exactly one type: `default` / `ui` / `quick-fix`
+- For each task, assign exactly one type: `default` / `ui` / `quick-fix` / `review`
 - UI auto-detection: needs UI work when task involves style assets (.css, .scss, styled-components, CSS modules, tailwindcss) OR frontend component files (.tsx, .jsx, .vue); output yes/no plus evidence
 
 ### 3. Generate Dev Doc
@@ -57,8 +58,9 @@ Done (generate summary)
   - `default` → `codex`
   - `ui` → `gemini` (enforced when allowed)
   - `quick-fix` → `claude`
+  - `review` → `ampcode`
   - Missing `type` → treat as `default`
-  - If the preferred backend is not allowed, fallback to an allowed backend by priority: `codex` → `claude` → `gemini`
+  - If the preferred backend is not allowed, fallback to an allowed backend by priority: `codex` → `claude` → `ampcode` → `gemini`
 - Independent tasks → run in parallel
 - Conflicting tasks → run serially
 
@@ -94,14 +96,14 @@ Only one file—minimal and clear.
 
 ### Tools
 - **AskUserQuestion**: interactive requirement clarification
-- **fish-agent-wrapper skill**: analysis, development, testing; supports `--backend` for `codex` / `claude` / `gemini`
+- **fish-agent-wrapper skill**: analysis, development, testing; supports `--backend` for `codex` / `claude` / `gemini` / `ampcode`
 - **dev-plan-generator agent**: generate dev doc (subagent via Task tool, saves context)
 
 ## Backend Selection & Routing
 - **Step 0**: user selects allowed backends; if `仅 codex`, all tasks use codex
 - **UI detection standard**: style files (.css, .scss, styled-components, CSS modules, tailwindcss) OR frontend component code (.tsx, .jsx, .vue) trigger `needs_ui: true`
-- **Task type field**: each task in `dev-plan.md` must have `type: default|ui|quick-fix`
-- **Routing**: `default`→codex, `ui`→gemini, `quick-fix`→claude; if disallowed, fallback to an allowed backend by priority: codex→claude→gemini
+- **Task type field**: each task in `dev-plan.md` must have `type: default|ui|quick-fix|review`
+- **Routing**: `default`→codex, `ui`→gemini, `quick-fix`→claude, `review`→ampcode; if disallowed, fallback to an allowed backend by priority: codex→claude→ampcode→gemini
 
 ## Key Features
 

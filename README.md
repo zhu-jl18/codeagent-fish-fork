@@ -8,7 +8,7 @@
 
 你会得到什么（Key Concepts）：
 - `/dev` 工作流：需求澄清 → 计划 → 并行执行 → 验证
-- `fish-agent-wrapper`：Go 写的执行器；统一 3 个后端 `codex/claude/gemini`；核心机制 `--parallel`
+- `fish-agent-wrapper`：Go 写的执行器；统一 4 个后端 `codex/claude/gemini/ampcode`；核心机制 `--parallel`
 - `product-requirements` skill：PRD 生成
 
 你不会得到什么：
@@ -58,6 +58,7 @@ bash scripts/build-dist.sh
 - `~/.claude/fish-agent-wrapper/codex-prompt.md`
 - `~/.claude/fish-agent-wrapper/claude-prompt.md`
 - `~/.claude/fish-agent-wrapper/gemini-prompt.md`
+- `~/.claude/fish-agent-wrapper/ampcode-prompt.md`
 
 规则：
 - wrapper 会读取对应后端的 prompt 文件；只有在内容非空时才会 prepend 到任务前面

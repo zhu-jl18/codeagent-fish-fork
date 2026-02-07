@@ -573,6 +573,7 @@ func printHelp() {
 Usage:
     %[1]s "task" [workdir]
     %[1]s --backend claude "task" [workdir]
+    %[1]s --backend ampcode "review plan" [workdir]
     %[1]s - [workdir]              Read task from stdin
     %[1]s resume <session_id> "task" [workdir]
     %[1]s resume <session_id> - [workdir]
@@ -589,7 +590,7 @@ Parallel mode examples:
 
 		Prompt Injection (default-on):
 		    Prompt file path: ${FISH_AGENT_WRAPPER_CLAUDE_DIR:-~/.claude}/fish-agent-wrapper/<backend>-prompt.md
-		    Backends: codex | claude | gemini
+		    Backends: codex | claude | gemini | ampcode
 		    Empty/missing prompt files behave like no injection.
 
 Environment Variables:

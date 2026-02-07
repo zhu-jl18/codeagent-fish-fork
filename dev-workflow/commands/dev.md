@@ -40,8 +40,9 @@ These rules have HIGHEST PRIORITY and override all other instructions:
     - `codex` - Stable, high quality, best cost-performance (default for most tasks)
     - `claude` - Fast, lightweight (for quick fixes and config changes)
     - `gemini` - UI/UX specialist (for frontend styling and components)
+    - `ampcode` - Additional backend (Amp CLI)
   - Store the selected backends as `allowed_backends` set for routing in Step 4
-  - Special rule: if user selects ONLY `codex`, then ALL subsequent tasks (including UI/quick-fix) MUST use `codex` (no exceptions)
+  - Special rule: if user selects ONLY `codex`, then ALL subsequent tasks (including UI/quick-fix/review) MUST use `codex` (no exceptions)
   - Guidance: If the request involves non-trivial logic or multi-file refactors, strongly recommend enabling at least `codex` or `claude`.
 
 - **Step 1: Requirement Clarification [MANDATORY - DO NOT SKIP]**
@@ -59,7 +60,7 @@ These rules have HIGHEST PRIORITY and override all other instructions:
   # analysis_backend selection:
   # - prefer codex if it is in allowed_backends
   # - otherwise pick the first allowed backend by priority:
-  #   codex -> claude -> gemini
+  #   codex -> claude -> ampcode -> gemini
   fish-agent-wrapper --backend {analysis_backend} - <<'EOF'
   Analyze the codebase for implementing [feature name].
 
@@ -72,7 +73,7 @@ These rules have HIGHEST PRIORITY and override all other instructions:
   2. Evaluate implementation options with trade-offs
   3. Make architectural decisions
   4. Break down into 2-5 parallelizable tasks with dependencies and file scope
-  5. Classify each task with a single `type`: `default` / `ui` / `quick-fix`
+  5. Classify each task with a single `type`: `default` / `ui` / `quick-fix` / `review`
   6. Determine if UI work is needed (check for .css/.tsx/.vue files)
 
   Output the analysis following the structure below.
@@ -111,7 +112,7 @@ These rules have HIGHEST PRIORITY and override all other instructions:
   [API design, data models, architecture choices made]
 
   ## Task Breakdown
-  [2-5 tasks with: ID, description, file scope, dependencies, test command, type(default|ui|quick-fix)]
+  [2-5 tasks with: ID, description, file scope, dependencies, test command, type(default|ui|quick-fix|review)]
 
   ## UI Determination
   needs_ui: [true/false]
@@ -125,7 +126,7 @@ These rules have HIGHEST PRIORITY and override all other instructions:
 
 - **Step 3: Generate Development Documentation**
   - invoke agent dev-plan-generator
-  - When creating `dev-plan.md`, ensure every task has `type: default|ui|quick-fix`
+  - When creating `dev-plan.md`, ensure every task has `type: default|ui|quick-fix|review`
   - Append a dedicated UI task if Step 2 marked `needs_ui: true` but no UI task exists
   - Output a brief summary of dev-plan.md:
     - Number of tasks and their IDs
@@ -142,13 +143,14 @@ These rules have HIGHEST PRIORITY and override all other instructions:
   - MUST use Bash tool to invoke `fish-agent-wrapper --parallel` for ALL code changes
   - NEVER use Edit, Write, MultiEdit, or Task tools to modify code directly
   - Backend routing (must be deterministic and enforceable):
-    - Task field: `type: default|ui|quick-fix` (missing → treat as `default`)
+    - Task field: `type: default|ui|quick-fix|review` (missing → treat as `default`)
     - Preferred backend by type:
       - `default` → `codex`
       - `ui` → `gemini` (enforced when allowed)
       - `quick-fix` → `claude`
+      - `review` → `ampcode`
     - If user selected `仅 codex`: all tasks MUST use `codex`
-    - Otherwise, if preferred backend is not in `allowed_backends`, fallback to the first available backend by priority: `codex` → `claude` → `gemini`
+    - Otherwise, if preferred backend is not in `allowed_backends`, fallback to the first available backend by priority: `codex` → `claude` → `ampcode` → `gemini`
   - Build ONE `--parallel` config that includes all tasks in `dev-plan.md` and submit it once via Bash tool:
     ```bash
     # One shot submission - wrapper handles topology + concurrency
@@ -197,13 +199,13 @@ These rules have HIGHEST PRIORITY and override all other instructions:
   - Circular dependencies: fish-agent-wrapper will detect and fail with error; revise task breakdown to remove cycles
   - Missing dependencies: Ensure all task IDs referenced in `dependencies` field exist
 - **Parallel execution timeout**: Individual tasks timeout after 2 hours (configurable via CODEX_TIMEOUT); failed tasks can be retried individually
-- **Backend unavailable**: If a routed backend is unavailable, fallback to another backend in `allowed_backends` (priority: codex → claude → gemini); if none works, fail with a clear error message
+- **Backend unavailable**: If a routed backend is unavailable, fallback to another backend in `allowed_backends` (priority: codex → claude → ampcode → gemini); if none works, fail with a clear error message
 
 **Quality Standards**
 - Code coverage ≥90%
 - Tasks based on natural functional boundaries (typically 2-5)
-- Each task has exactly one `type: default|ui|quick-fix`
-- Backend routed by `type`: `default`→codex, `ui`→gemini, `quick-fix`→claude (with allowed_backends fallback)
+- Each task has exactly one `type: default|ui|quick-fix|review`
+- Backend routed by `type`: `default`→codex, `ui`→gemini, `quick-fix`→claude, `review`→ampcode (with allowed_backends fallback)
 - Documentation must be minimal yet actionable
 - No verbose implementations; only essential code
 
