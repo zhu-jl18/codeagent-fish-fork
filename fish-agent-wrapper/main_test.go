@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"sync"
@@ -1958,13 +1959,8 @@ func TestBackendBuildArgs_AmpcodeBackend(t *testing.T) {
 	cfg := &Config{Mode: "new"}
 	got := backend.BuildArgs(cfg, "task")
 	want := []string{"--no-color", "--no-notifications", "--execute", "--stream-json", "--mode", "smart", "task"}
-	if len(got) != len(want) {
-		t.Fatalf("length mismatch: got=%v want=%v", got, want)
-	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Fatalf("index %d got %q want %q", i, got[i], want[i])
-		}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("BuildArgs() mismatch:\ngot: %v\nwant: %v", got, want)
 	}
 
 	resumeCfg := &Config{Mode: "resume", SessionID: "T-1"}
