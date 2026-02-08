@@ -79,39 +79,12 @@ type UnifiedEvent struct {
 	Content string `json:"content,omitempty"`
 	Delta   *bool  `json:"delta,omitempty"`
 	Status  string `json:"status,omitempty"`
-
-	// Ampcode assistant event fields
-	Message *UnifiedAssistantMessage `json:"message,omitempty"`
 }
 
 // ItemContent represents the parsed item.text field for Codex events
 type ItemContent struct {
 	Type string      `json:"type"`
 	Text interface{} `json:"text"`
-}
-
-type UnifiedAssistantMessage struct {
-	Content []UnifiedAssistantContent `json:"content,omitempty"`
-}
-
-type UnifiedAssistantContent struct {
-	Type string `json:"type,omitempty"`
-	Text string `json:"text,omitempty"`
-}
-
-func extractAssistantText(message *UnifiedAssistantMessage) string {
-	if message == nil || len(message.Content) == 0 {
-		return ""
-	}
-
-	var sb strings.Builder
-	for _, block := range message.Content {
-		if block.Type != "text" || block.Text == "" {
-			continue
-		}
-		sb.WriteString(block.Text)
-	}
-	return sb.String()
 }
 
 func parseJSONStreamInternal(r io.Reader, warnFn func(string), infoFn func(string), onMessage func(), onComplete func()) (message, threadID string) {
@@ -144,7 +117,6 @@ func parseJSONStreamInternal(r io.Reader, warnFn func(string), infoFn func(strin
 		geminiBuffer   strings.Builder
 		geminiResult   string
 		geminiSawDelta bool
-		ampcodeMessage string
 	)
 
 	for {
@@ -194,7 +166,6 @@ func parseJSONStreamInternal(r io.Reader, warnFn func(string), infoFn func(strin
 			isClaude = true
 		}
 		isGemini := (event.Type == "init" && event.SessionID != "") || event.Role != "" || event.Delta != nil || event.Status != ""
-		isAmpcode := event.Type == "assistant" || event.Type == "done" || event.Type == "completion" || event.Message != nil
 
 		// Handle Codex events
 		if isCodex {
@@ -321,25 +292,6 @@ func parseJSONStreamInternal(r io.Reader, warnFn func(string), infoFn func(strin
 			continue
 		}
 
-		if isAmpcode {
-			if event.SessionID != "" && threadID == "" {
-				threadID = event.SessionID
-			}
-
-			assistantText := extractAssistantText(event.Message)
-			if assistantText != "" {
-				ampcodeMessage = assistantText
-				notifyMessage()
-			}
-
-			if event.Type == "completion" || event.Type == "done" {
-				notifyComplete()
-			}
-
-			infoFn(fmt.Sprintf("Parsed Ampcode event #%d type=%s content_len=%d", totalEvents, event.Type, len(assistantText)))
-			continue
-		}
-
 		// Unknown event format from other backends; ignore.
 		continue
 	}
@@ -351,8 +303,6 @@ func parseJSONStreamInternal(r io.Reader, warnFn func(string), infoFn func(strin
 		message = geminiBuffer.String()
 	case claudeMessage != "":
 		message = claudeMessage
-	case ampcodeMessage != "":
-		message = ampcodeMessage
 	default:
 		message = codexMessage
 	}

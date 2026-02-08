@@ -14,7 +14,6 @@ This document is the single source of truth for runtime behavior related to:
 | `codex` | `--dangerously-bypass-approvals-and-sandbox` | enabled by default | set `CODEX_BYPASS_SANDBOX=false` |
 | `claude` | `--dangerously-skip-permissions` | enabled by default | set `FISH_AGENT_WRAPPER_SKIP_PERMISSIONS=false` |
 | `gemini` | `-y` (`--yolo`) | always enabled in current wrapper | no wrapper env toggle currently |
-| `ampcode` | `--dangerously-allow-all` | enabled by default | set `FISH_AGENT_WRAPPER_SKIP_PERMISSIONS=false` |
 
 Notes:
 
@@ -30,11 +29,10 @@ Notes:
   - unset/true => wrapper appends codex dangerous bypass flag
   - false => wrapper does not append codex dangerous bypass flag
 
-- `FISH_AGENT_WRAPPER_SKIP_PERMISSIONS` (claude + ampcode)
+- `FISH_AGENT_WRAPPER_SKIP_PERMISSIONS` (claude)
   - unset/true => wrapper appends:
     - claude: `--dangerously-skip-permissions`
-    - ampcode: `--dangerously-allow-all`
-  - false => wrapper keeps permission prompts for claude/ampcode
+  - false => wrapper keeps permission prompts for claude
 
 ### Runtime Controls
 
@@ -52,10 +50,6 @@ Notes:
 - `FISH_AGENT_WRAPPER_CLAUDE_DIR`
   - default: `~/.claude`
   - used for prompt file + Claude settings resolution
-
-- `FISH_AGENT_WRAPPER_AMPCODE_MODE`
-  - allowed: `smart|deep|rush|free`
-  - default: `smart`
 
 ## 3) Parallel Propagation Rule (`skip_permissions`)
 

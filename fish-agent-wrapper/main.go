@@ -226,12 +226,11 @@ func run() (exitCode int) {
 				fmt.Fprintf(os.Stderr, "  %s --parallel --backend codex < tasks.txt\n", name)
 				fmt.Fprintf(os.Stderr, "  echo '...' | %s --parallel --backend claude\n", name)
 				fmt.Fprintf(os.Stderr, "  %s --parallel --backend gemini <<'EOF'\n", name)
-				fmt.Fprintf(os.Stderr, "  %s --parallel --backend ampcode --full-output <<'EOF'  # include full task output\n", name)
 				return 1
 			}
 
 			if !backendSpecified {
-				fmt.Fprintln(os.Stderr, "ERROR: --backend is required in --parallel mode (supported: codex, claude, gemini, ampcode)")
+				fmt.Fprintln(os.Stderr, "ERROR: --backend is required in --parallel mode (supported: codex, claude, gemini)")
 				fmt.Fprintln(os.Stderr, "Usage examples:")
 				fmt.Fprintf(os.Stderr, "  %s --parallel --backend codex < tasks.txt\n", name)
 				fmt.Fprintf(os.Stderr, "  %s --parallel --backend claude <<'EOF'\n", name)
@@ -597,7 +596,7 @@ Usage:
 	%[1]s --help
 
 Supported backends:
-	codex | claude | gemini | ampcode
+	codex | claude | gemini
 
 Common mistakes:
 	--resume is invalid; use: resume <session_id> <task>
@@ -608,11 +607,10 @@ Parallel mode examples:
 	%[1]s --parallel --backend codex < tasks.txt
 	echo '...' | %[1]s --parallel --backend claude
 	%[1]s --parallel --backend gemini --full-output < tasks.txt
-	%[1]s --parallel --backend ampcode <<'EOF'
 
 		Prompt Injection (default-on):
 		    Prompt file path: ${FISH_AGENT_WRAPPER_CLAUDE_DIR:-~/.claude}/fish-agent-wrapper/<backend>-prompt.md
-		    Backends: codex | claude | gemini | ampcode
+		    Backends: codex | claude | gemini
 		    Empty/missing prompt files behave like no injection.
 
 Environment Variables:

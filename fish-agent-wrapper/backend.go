@@ -182,58 +182,6 @@ func (GeminiBackend) BuildArgs(cfg *Config, targetArg string) []string {
 	return buildGeminiArgs(cfg, targetArg)
 }
 
-type AmpcodeBackend struct{}
-
-func (AmpcodeBackend) Name() string { return "ampcode" }
-func (AmpcodeBackend) Command() string {
-	return "amp"
-}
-func (AmpcodeBackend) BuildArgs(cfg *Config, targetArg string) []string {
-	return buildAmpcodeArgs(cfg, targetArg)
-}
-
-func resolveAmpcodeMode() string {
-	raw := strings.ToLower(strings.TrimSpace(os.Getenv("FISH_AGENT_WRAPPER_AMPCODE_MODE")))
-	switch raw {
-	case "", "smart":
-		return "smart"
-	case "deep", "free", "rush":
-		return raw
-	default:
-		logWarn("Invalid FISH_AGENT_WRAPPER_AMPCODE_MODE, fallback to smart")
-		return "smart"
-	}
-}
-
-func buildAmpcodeArgs(cfg *Config, targetArg string) []string {
-	if cfg == nil {
-		return nil
-	}
-
-	mode := resolveAmpcodeMode()
-	args := []string{"--no-color", "--no-notifications"}
-
-	if cfg.Mode == "resume" {
-		if cfg.SessionID != "" {
-			args = append(args, "threads", "continue", cfg.SessionID)
-		}
-	}
-
-	if cfg.SkipPermissions || envFlagDefaultTrue("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS") {
-		args = append(args, "--dangerously-allow-all")
-	}
-
-	if targetArg == "-" {
-		args = append(args, "--execute")
-	} else {
-		args = append(args, "--execute", targetArg)
-	}
-
-	args = append(args, "--stream-json", "--mode", mode)
-
-	return args
-}
-
 func buildGeminiArgs(cfg *Config, targetArg string) []string {
 	if cfg == nil {
 		return nil
