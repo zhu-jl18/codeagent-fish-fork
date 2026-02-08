@@ -11,7 +11,7 @@ import (
 )
 
 func resolveTimeout() int {
-	raw := os.Getenv("CODEX_TIMEOUT")
+	raw := getEnv("CODEX_TIMEOUT", "")
 	if raw == "" {
 		return defaultTimeout
 	}
@@ -68,54 +68,20 @@ func isTerminal() bool {
 	return isTerminalFn()
 }
 
-func getEnv(key, defaultValue string) string {
-	if val := os.Getenv(key); val != "" {
-		return val
-	}
-	return defaultValue
-}
-
-func resolveClaudeDir() string {
-	raw := strings.TrimSpace(os.Getenv("FISH_AGENT_WRAPPER_CLAUDE_DIR"))
-	if raw != "" {
-		expanded := raw
-		if raw == "~" || strings.HasPrefix(raw, "~/") || strings.HasPrefix(raw, "~\\") {
-			home, err := os.UserHomeDir()
-			if err == nil && home != "" {
-				if raw == "~" {
-					expanded = home
-				} else {
-					expanded = home + raw[1:]
-				}
-			}
-		}
-		if abs, err := filepath.Abs(expanded); err == nil {
-			return filepath.Clean(abs)
-		}
-		return filepath.Clean(expanded)
-	}
-
-	home, err := os.UserHomeDir()
-	if err != nil || home == "" {
-		return ""
-	}
-	return filepath.Join(home, ".claude")
-}
-
 func defaultPromptFileForBackend(backendName string) string {
 	backend := strings.ToLower(strings.TrimSpace(backendName))
 	if backend == "" {
 		backend = defaultBackendName
 	}
 
-	base := resolveClaudeDir()
+	base := resolvePromptBaseDir()
 	if base == "" {
 		return ""
 	}
 
 	switch backend {
 	case "codex", "claude", "gemini":
-		return filepath.Join(base, "fish-agent-wrapper", backend+"-prompt.md")
+		return filepath.Join(base, backend+"-prompt.md")
 	default:
 		return ""
 	}

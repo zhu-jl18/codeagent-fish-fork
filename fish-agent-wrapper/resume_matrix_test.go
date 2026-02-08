@@ -86,11 +86,11 @@ func TestResumeConversation_SupportedBackends(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			defer resetTestHooks()
-			t.Setenv("CODEX_BYPASS_SANDBOX", "false")
+			setRuntimeSettingsForTest(map[string]string{"CODEX_BYPASS_SANDBOX": "false"})
+			t.Cleanup(resetRuntimeSettingsForTest)
 			home := t.TempDir()
 			t.Setenv("HOME", home)
 			t.Setenv("USERPROFILE", home)
-			t.Setenv("FISH_AGENT_WRAPPER_CLAUDE_DIR", t.TempDir())
 
 			var calls int
 			newCommandRunner = func(ctx context.Context, name string, args ...string) commandRunner {

@@ -1,9 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"os"
-	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -12,7 +9,8 @@ func TestClaudeBuildArgs_ModesAndPermissions(t *testing.T) {
 	backend := ClaudeBackend{}
 
 	t.Run("new mode omits skip-permissions when env disabled", func(t *testing.T) {
-		t.Setenv("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS", "false")
+		setRuntimeSettingsForTest(map[string]string{"FISH_AGENT_WRAPPER_SKIP_PERMISSIONS": "false"})
+		t.Cleanup(resetRuntimeSettingsForTest)
 		cfg := &Config{Mode: "new", WorkDir: "/repo"}
 		got := backend.BuildArgs(cfg, "todo")
 		want := []string{"-p", "--setting-sources", "", "--output-format", "stream-json", "--verbose", "todo"}
@@ -31,7 +29,8 @@ func TestClaudeBuildArgs_ModesAndPermissions(t *testing.T) {
 	})
 
 	t.Run("resume mode includes session id", func(t *testing.T) {
-		t.Setenv("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS", "false")
+		setRuntimeSettingsForTest(map[string]string{"FISH_AGENT_WRAPPER_SKIP_PERMISSIONS": "false"})
+		t.Cleanup(resetRuntimeSettingsForTest)
 		cfg := &Config{Mode: "resume", SessionID: "sid-123", WorkDir: "/ignored"}
 		got := backend.BuildArgs(cfg, "resume-task")
 		want := []string{"-p", "--setting-sources", "", "-r", "sid-123", "--output-format", "stream-json", "--verbose", "resume-task"}
@@ -41,7 +40,8 @@ func TestClaudeBuildArgs_ModesAndPermissions(t *testing.T) {
 	})
 
 	t.Run("resume mode without session still returns base flags", func(t *testing.T) {
-		t.Setenv("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS", "false")
+		setRuntimeSettingsForTest(map[string]string{"FISH_AGENT_WRAPPER_SKIP_PERMISSIONS": "false"})
+		t.Cleanup(resetRuntimeSettingsForTest)
 		cfg := &Config{Mode: "resume", WorkDir: "/ignored"}
 		got := backend.BuildArgs(cfg, "follow-up")
 		want := []string{"-p", "--setting-sources", "", "--output-format", "stream-json", "--verbose", "follow-up"}
@@ -115,8 +115,8 @@ func TestVariousBackendsBuildArgs(t *testing.T) {
 	})
 
 	t.Run("codex build args omits bypass flag by default", func(t *testing.T) {
-		const key = "CODEX_BYPASS_SANDBOX"
-		t.Setenv(key, "false")
+		setRuntimeSettingsForTest(map[string]string{"CODEX_BYPASS_SANDBOX": "false"})
+		t.Cleanup(resetRuntimeSettingsForTest)
 
 		backend := CodexBackend{}
 		cfg := &Config{Mode: "new", WorkDir: "/tmp"}
@@ -128,8 +128,8 @@ func TestVariousBackendsBuildArgs(t *testing.T) {
 	})
 
 	t.Run("codex build args includes bypass flag when enabled", func(t *testing.T) {
-		const key = "CODEX_BYPASS_SANDBOX"
-		t.Setenv(key, "true")
+		setRuntimeSettingsForTest(map[string]string{"CODEX_BYPASS_SANDBOX": "true"})
+		t.Cleanup(resetRuntimeSettingsForTest)
 
 		backend := CodexBackend{}
 		cfg := &Config{Mode: "new", WorkDir: "/tmp"}
@@ -163,63 +163,44 @@ func TestClaudeBuildArgs_BackendMetadata(t *testing.T) {
 	}
 }
 
-func TestLoadMinimalEnvSettings(t *testing.T) {
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("USERPROFILE", home)
-
-	t.Run("missing file returns empty", func(t *testing.T) {
-		if got := loadMinimalEnvSettings(); len(got) != 0 {
-			t.Fatalf("got %v, want empty", got)
+func TestRuntimeEnvForBackend(t *testing.T) {
+	t.Run("returns nil when no runtime settings", func(t *testing.T) {
+		resetRuntimeSettingsForTest()
+		if got := runtimeEnvForBackend("claude"); len(got) != 0 {
+			t.Fatalf("got %v, want nil/empty", got)
 		}
 	})
 
-	t.Run("valid env returns string map", func(t *testing.T) {
-		dir := filepath.Join(home, ".claude")
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			t.Fatalf("MkdirAll: %v", err)
-		}
-		path := filepath.Join(dir, "settings.json")
-		data := []byte(`{"env":{"ANTHROPIC_API_KEY":"secret","FOO":"bar"}}`)
-		if err := os.WriteFile(path, data, 0o600); err != nil {
-			t.Fatalf("WriteFile: %v", err)
-		}
+	t.Run("filters wrapper control keys", func(t *testing.T) {
+		setRuntimeSettingsForTest(map[string]string{
+			"FISH_AGENT_WRAPPER_SKIP_PERMISSIONS": "false",
+			"CODEX_TIMEOUT":                        "7200000",
+			"ANTHROPIC_API_KEY":                    "secret",
+			"FOO":                                  "bar",
+		})
+		t.Cleanup(resetRuntimeSettingsForTest)
 
-		got := loadMinimalEnvSettings()
+		got := runtimeEnvForBackend("claude")
 		if got["ANTHROPIC_API_KEY"] != "secret" || got["FOO"] != "bar" {
-			t.Fatalf("got %v, want keys present", got)
+			t.Fatalf("got %v, want ANTHROPIC_API_KEY/FOO", got)
+		}
+		if _, ok := got["CODEX_TIMEOUT"]; ok {
+			t.Fatalf("got %v, control key CODEX_TIMEOUT should be filtered", got)
+		}
+		if _, ok := got["FISH_AGENT_WRAPPER_SKIP_PERMISSIONS"]; ok {
+			t.Fatalf("got %v, control key FISH_AGENT_WRAPPER_SKIP_PERMISSIONS should be filtered", got)
 		}
 	})
 
-	t.Run("non-string values are ignored", func(t *testing.T) {
-		dir := filepath.Join(home, ".claude")
-		path := filepath.Join(dir, "settings.json")
-		data := []byte(`{"env":{"GOOD":"ok","BAD":123,"ALSO_BAD":true}}`)
-		if err := os.WriteFile(path, data, 0o600); err != nil {
-			t.Fatalf("WriteFile: %v", err)
-		}
+	t.Run("gemini adds bearer auth fallback", func(t *testing.T) {
+		setRuntimeSettingsForTest(map[string]string{
+			"GEMINI_API_KEY": "k1",
+		})
+		t.Cleanup(resetRuntimeSettingsForTest)
 
-		got := loadMinimalEnvSettings()
-		if got["GOOD"] != "ok" {
-			t.Fatalf("got %v, want GOOD=ok", got)
-		}
-		if _, ok := got["BAD"]; ok {
-			t.Fatalf("got %v, want BAD omitted", got)
-		}
-		if _, ok := got["ALSO_BAD"]; ok {
-			t.Fatalf("got %v, want ALSO_BAD omitted", got)
-		}
-	})
-
-	t.Run("oversized file returns empty", func(t *testing.T) {
-		dir := filepath.Join(home, ".claude")
-		path := filepath.Join(dir, "settings.json")
-		data := bytes.Repeat([]byte("a"), maxClaudeSettingsBytes+1)
-		if err := os.WriteFile(path, data, 0o600); err != nil {
-			t.Fatalf("WriteFile: %v", err)
-		}
-		if got := loadMinimalEnvSettings(); len(got) != 0 {
-			t.Fatalf("got %v, want empty", got)
+		got := runtimeEnvForBackend("gemini")
+		if got["GEMINI_API_KEY_AUTH_MECHANISM"] != "bearer" {
+			t.Fatalf("got %v, want GEMINI_API_KEY_AUTH_MECHANISM=bearer", got)
 		}
 	})
 }

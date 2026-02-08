@@ -8,6 +8,22 @@ import (
 	"testing"
 )
 
+func createPromptBaseForTest(t *testing.T) string {
+	t.Helper()
+	setRuntimeSettingsForTest(map[string]string{})
+	t.Cleanup(resetRuntimeSettingsForTest)
+
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+
+	promptBase := filepath.Join(home, ".fish-agent-wrapper", "prompts")
+	if err := os.MkdirAll(promptBase, 0o755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+	return promptBase
+}
+
 func TestWrapTaskWithAgentPrompt(t *testing.T) {
 	got := wrapTaskWithAgentPrompt("P", "do")
 	want := "<agent-prompt>\nP\n</agent-prompt>\n\ndo"
@@ -27,10 +43,9 @@ func TestReadAgentPromptFile_EmptyPath(t *testing.T) {
 }
 
 func TestReadAgentPromptFile_AbsolutePathInsideClaudeDir(t *testing.T) {
-	claudeDir := t.TempDir()
-	t.Setenv("FISH_AGENT_WRAPPER_CLAUDE_DIR", claudeDir)
+	promptBase := createPromptBaseForTest(t)
 
-	path := filepath.Join(claudeDir, "prompt.md")
+	path := filepath.Join(promptBase, "prompt.md")
 	if err := os.WriteFile(path, []byte("LINE1\n"), 0o644); err != nil {
 		t.Fatalf("WriteFile: %v", err)
 	}
@@ -45,22 +60,14 @@ func TestReadAgentPromptFile_AbsolutePathInsideClaudeDir(t *testing.T) {
 }
 
 func TestReadAgentPromptFile_ExplicitTildeExpansion(t *testing.T) {
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("USERPROFILE", home)
+	promptBase := createPromptBaseForTest(t)
 
-	claudeDir := filepath.Join(home, ".claude")
-	t.Setenv("FISH_AGENT_WRAPPER_CLAUDE_DIR", "~/.claude")
-	if err := os.MkdirAll(claudeDir, 0o755); err != nil {
-		t.Fatalf("MkdirAll: %v", err)
-	}
-
-	path := filepath.Join(claudeDir, "prompt.md")
+	path := filepath.Join(promptBase, "prompt.md")
 	if err := os.WriteFile(path, []byte("P\n"), 0o644); err != nil {
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	got, err := readAgentPromptFile("~/.claude/prompt.md")
+	got, err := readAgentPromptFile("~/.fish-agent-wrapper/prompts/prompt.md")
 	if err != nil {
 		t.Fatalf("readAgentPromptFile error: %v", err)
 	}
@@ -70,20 +77,13 @@ func TestReadAgentPromptFile_ExplicitTildeExpansion(t *testing.T) {
 }
 
 func TestReadAgentPromptFile_RestrictedAllowsClaudeDir(t *testing.T) {
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("USERPROFILE", home)
-
-	claudeDir := filepath.Join(home, ".claude")
-	if err := os.MkdirAll(claudeDir, 0o755); err != nil {
-		t.Fatalf("MkdirAll: %v", err)
-	}
-	path := filepath.Join(claudeDir, "prompt.md")
+	promptBase := createPromptBaseForTest(t)
+	path := filepath.Join(promptBase, "prompt.md")
 	if err := os.WriteFile(path, []byte("OK\n"), 0o644); err != nil {
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	got, err := readAgentPromptFile("~/.claude/prompt.md")
+	got, err := readAgentPromptFile("~/.fish-agent-wrapper/prompts/prompt.md")
 	if err != nil {
 		t.Fatalf("readAgentPromptFile error: %v", err)
 	}
@@ -93,8 +93,7 @@ func TestReadAgentPromptFile_RestrictedAllowsClaudeDir(t *testing.T) {
 }
 
 func TestReadAgentPromptFile_RestrictedRejectsOutsideClaudeDir(t *testing.T) {
-	claudeDir := t.TempDir()
-	t.Setenv("FISH_AGENT_WRAPPER_CLAUDE_DIR", claudeDir)
+	_ = createPromptBaseForTest(t)
 
 	outsideDir := t.TempDir()
 	path := filepath.Join(outsideDir, "prompt.md")
@@ -103,13 +102,12 @@ func TestReadAgentPromptFile_RestrictedRejectsOutsideClaudeDir(t *testing.T) {
 	}
 
 	if _, err := readAgentPromptFile(path); err == nil {
-		t.Fatalf("expected error for prompt file outside FISH_AGENT_WRAPPER_CLAUDE_DIR, got nil")
+		t.Fatalf("expected error for prompt file outside prompt base dir, got nil")
 	}
 }
 
 func TestReadAgentPromptFile_RestrictedRejectsTraversal(t *testing.T) {
-	claudeDir := t.TempDir()
-	t.Setenv("FISH_AGENT_WRAPPER_CLAUDE_DIR", claudeDir)
+	promptBase := createPromptBaseForTest(t)
 
 	secretDir := t.TempDir()
 	path := filepath.Join(secretDir, "secret.md")
@@ -117,17 +115,16 @@ func TestReadAgentPromptFile_RestrictedRejectsTraversal(t *testing.T) {
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	traversal := filepath.Join(claudeDir, "..", filepath.Base(path))
+	traversal := filepath.Join(promptBase, "..", filepath.Base(path))
 	if _, err := readAgentPromptFile(traversal); err == nil {
 		t.Fatalf("expected traversal to be rejected, got nil")
 	}
 }
 
 func TestReadAgentPromptFile_NotFound(t *testing.T) {
-	claudeDir := t.TempDir()
-	t.Setenv("FISH_AGENT_WRAPPER_CLAUDE_DIR", claudeDir)
+	promptBase := createPromptBaseForTest(t)
 
-	_, err := readAgentPromptFile(filepath.Join(claudeDir, "missing.md"))
+	_, err := readAgentPromptFile(filepath.Join(promptBase, "missing.md"))
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("expected not-exist error, got %v", err)
 	}
@@ -138,10 +135,9 @@ func TestReadAgentPromptFile_PermissionDenied(t *testing.T) {
 		t.Skip("chmod-based permission test is not reliable on Windows")
 	}
 
-	claudeDir := t.TempDir()
-	t.Setenv("FISH_AGENT_WRAPPER_CLAUDE_DIR", claudeDir)
+	promptBase := createPromptBaseForTest(t)
 
-	path := filepath.Join(claudeDir, "private.md")
+	path := filepath.Join(promptBase, "private.md")
 	if err := os.WriteFile(path, []byte("PRIVATE\n"), 0o600); err != nil {
 		t.Fatalf("WriteFile: %v", err)
 	}
@@ -163,8 +159,7 @@ func TestReadAgentPromptFile_RestrictedRejectsSymlinkEscape(t *testing.T) {
 		t.Skip("symlink tests are not reliable on Windows by default")
 	}
 
-	claudeDir := t.TempDir()
-	t.Setenv("FISH_AGENT_WRAPPER_CLAUDE_DIR", claudeDir)
+	promptBase := createPromptBaseForTest(t)
 
 	outsideDir := t.TempDir()
 	outsideFile := filepath.Join(outsideDir, "outside.md")
@@ -172,7 +167,7 @@ func TestReadAgentPromptFile_RestrictedRejectsSymlinkEscape(t *testing.T) {
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	linkPath := filepath.Join(claudeDir, "link.md")
+	linkPath := filepath.Join(promptBase, "link.md")
 	if err := os.Symlink(outsideFile, linkPath); err != nil {
 		t.Skipf("Symlink not supported (%v)", err)
 	}

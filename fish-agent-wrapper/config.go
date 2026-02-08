@@ -79,7 +79,7 @@ func selectBackend(name string) (Backend, error) {
 }
 
 func envFlagEnabled(key string) bool {
-	val, ok := os.LookupEnv(key)
+	val, ok := lookupRuntimeSetting(key)
 	if !ok {
 		return false
 	}
@@ -106,7 +106,7 @@ func parseBoolFlag(val string, defaultValue bool) bool {
 
 // envFlagDefaultTrue returns true unless the env var is explicitly set to false/0/no/off.
 func envFlagDefaultTrue(key string) bool {
-	val, ok := os.LookupEnv(key)
+	val, ok := lookupRuntimeSetting(key)
 	if !ok {
 		return true
 	}
@@ -315,7 +315,7 @@ func parseArgs() (*Config, error) {
 const maxParallelWorkersLimit = 100
 
 func resolveMaxParallelWorkers() int {
-	raw := strings.TrimSpace(os.Getenv("FISH_AGENT_WRAPPER_MAX_PARALLEL_WORKERS"))
+	raw := strings.TrimSpace(getEnv("FISH_AGENT_WRAPPER_MAX_PARALLEL_WORKERS", ""))
 	if raw == "" {
 		return 0
 	}

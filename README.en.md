@@ -19,24 +19,20 @@ What you get:
 python3 install.py
 ```
 
-Notes:
-- The installer copies a prebuilt `fish-agent-wrapper` binary from `./dist` (no Go toolchain required at install time).
-- It appends a managed workflow block to your `CLAUDE.md` (non-destructive; `--force` refreshes the managed block).
-
 Optional:
 ```bash
-python3 install.py --install-dir ~/.claude --force
+python3 install.py --install-dir ~/.fish-agent-wrapper --force
 python3 install.py --skip-wrapper
 ```
 
-It installs/updates:
-- `CLAUDE.md` (append-only managed block)
-- `commands/dev.md`
-- `agents/dev-plan-generator.md`
-- `skills/fish-agent-wrapper/SKILL.md`
-- `skills/product-requirements/SKILL.md`
-- `~/.claude/fish-agent-wrapper/*-prompt.md` (per-backend empty placeholders; used for prompt injection)
-- `~/.claude/bin/fish-agent-wrapper` (or `.exe` on Windows)
+Installer outputs:
+- `~/.fish-agent-wrapper/.env` (single runtime config source)
+- `~/.fish-agent-wrapper/prompts/*-prompt.md` (per-backend placeholders)
+- `~/.fish-agent-wrapper/bin/fish-agent-wrapper` (or `.exe` on Windows)
+
+Not automated (manual by design):
+- No auto-copy for `skills/`, `dev-workflow/commands`, or `dev-workflow/agents`
+- Manually copy markdown assets into each target CLI root/project scope (Claude/Codex/iFlow/Amp)
 
 ## Maintain (Rebuild Dist Binaries)
 
@@ -52,18 +48,15 @@ This produces:
 ## Prompt Injection (Default-On, Empty = No-Op)
 
 Default prompt placeholder files:
-- `~/.claude/fish-agent-wrapper/codex-prompt.md`
-- `~/.claude/fish-agent-wrapper/claude-prompt.md`
-- `~/.claude/fish-agent-wrapper/gemini-prompt.md`
+- `~/.fish-agent-wrapper/prompts/codex-prompt.md`
+- `~/.fish-agent-wrapper/prompts/claude-prompt.md`
+- `~/.fish-agent-wrapper/prompts/gemini-prompt.md`
 
 Behavior:
 - Wrapper loads the per-backend prompt and prepends it only if it has non-empty content.
 - Empty/whitespace-only or missing prompt files behave like "no injection".
 
-Useful env vars:
-- `FISH_AGENT_WRAPPER_CLAUDE_DIR`: base dir (default `~/.claude`)
-
-For runtime behavior (approval/bypass flags, timeout, and parallel propagation rules), see:
+Runtime behavior (approval/bypass flags, timeout, parallel propagation rules):
 - `docs/runtime-config.md`
 
 ## Usage

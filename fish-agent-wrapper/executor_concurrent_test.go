@@ -281,8 +281,8 @@ func TestExecutorHelperCoverage(t *testing.T) {
 	})
 
 	t.Run("generateFinalOutputAndArgs", func(t *testing.T) {
-		const key = "CODEX_BYPASS_SANDBOX"
-		t.Setenv(key, "false")
+		setRuntimeSettingsForTest(map[string]string{"CODEX_BYPASS_SANDBOX": "false"})
+		t.Cleanup(resetRuntimeSettingsForTest)
 
 		out := generateFinalOutput([]TaskResult{
 			{TaskID: "ok", ExitCode: 0},
@@ -313,7 +313,8 @@ func TestExecutorHelperCoverage(t *testing.T) {
 	})
 
 	t.Run("generateFinalOutputASCIIMode", func(t *testing.T) {
-		t.Setenv("FISH_AGENT_WRAPPER_ASCII_MODE", "true")
+		setRuntimeSettingsForTest(map[string]string{"FISH_AGENT_WRAPPER_ASCII_MODE": "true"})
+		t.Cleanup(resetRuntimeSettingsForTest)
 
 		results := []TaskResult{
 			{TaskID: "ok", ExitCode: 0, Coverage: "92%", CoverageNum: 92, CoverageTarget: 90, KeyOutput: "done"},
@@ -335,7 +336,8 @@ func TestExecutorHelperCoverage(t *testing.T) {
 	})
 
 	t.Run("generateFinalOutputUnicodeMode", func(t *testing.T) {
-		t.Setenv("FISH_AGENT_WRAPPER_ASCII_MODE", "false")
+		setRuntimeSettingsForTest(map[string]string{"FISH_AGENT_WRAPPER_ASCII_MODE": "false"})
+		t.Cleanup(resetRuntimeSettingsForTest)
 
 		results := []TaskResult{
 			{TaskID: "ok", ExitCode: 0, Coverage: "92%", CoverageNum: 92, CoverageTarget: 90, KeyOutput: "done"},
@@ -357,7 +359,8 @@ func TestExecutorHelperCoverage(t *testing.T) {
 		runCodexTaskFn = func(task TaskSpec, timeout int) TaskResult {
 			return TaskResult{TaskID: task.ID, ExitCode: 0, Message: "done"}
 		}
-		t.Setenv("FISH_AGENT_WRAPPER_MAX_PARALLEL_WORKERS", "1")
+		setRuntimeSettingsForTest(map[string]string{"FISH_AGENT_WRAPPER_MAX_PARALLEL_WORKERS": "1"})
+		t.Cleanup(resetRuntimeSettingsForTest)
 
 		results := executeConcurrent([][]TaskSpec{{{ID: "wrap"}}}, 1)
 		if len(results) != 1 || results[0].TaskID != "wrap" {
@@ -626,7 +629,8 @@ func TestExecutorRunCodexTaskWithContext(t *testing.T) {
 	})
 
 	t.Run("claudeSkipPermissionsPropagatesFromTaskSpec", func(t *testing.T) {
-		t.Setenv("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS", "false")
+		setRuntimeSettingsForTest(map[string]string{"FISH_AGENT_WRAPPER_SKIP_PERMISSIONS": "false"})
+		t.Cleanup(resetRuntimeSettingsForTest)
 		var gotArgs []string
 		newCommandRunner = func(ctx context.Context, name string, args ...string) commandRunner {
 			gotArgs = append([]string(nil), args...)

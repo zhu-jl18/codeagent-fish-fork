@@ -24,22 +24,21 @@ python3 install.py
 
 可选参数：
 ```bash
-python3 install.py --install-dir ~/.claude --force
+python3 install.py --install-dir ~/.fish-agent-wrapper --force
 python3 install.py --skip-wrapper
 ```
 
 安装器会做这些事：
-- `CLAUDE.md`：**追加** managed block（非破坏性覆写；`--force` 刷新 managed block）
-- `commands/dev.md`
-- `agents/dev-plan-generator.md`
-- `skills/fish-agent-wrapper/SKILL.md`
-- `skills/product-requirements/SKILL.md`
-- `~/.claude/fish-agent-wrapper/*-prompt.md`：每个后端一个空占位文件（用于 prompt 注入）
-- `~/.claude/bin/fish-agent-wrapper`（Windows 上是 `.exe`）
+- `~/.fish-agent-wrapper/.env`：运行时唯一配置源
+- `~/.fish-agent-wrapper/prompts/*-prompt.md`：每个后端一个空占位文件（用于 prompt 注入）
+- `~/.fish-agent-wrapper/bin/fish-agent-wrapper`（Windows 上是 `.exe`）
+
+不会自动做的事（必须手动）：
+- 不会自动复制 `skills/` / `dev-workflow/commands` / `dev-workflow/agents`
+- 请按你的目标 CLI（Claude/Codex/iFlow/Amp）手动复制到对应 root 或 project scope
 
 提示：
 - 在 WSL 里运行 `install.py` 会安装 Linux wrapper；在 macOS（Apple Silicon）里运行会安装 Darwin arm64 wrapper；在 Windows 里运行会安装 Windows `.exe`。
-- 如果你使用了非默认目录，请设置 `FISH_AGENT_WRAPPER_CLAUDE_DIR` 指向你的目录。
 
 ## 维护（重新编译 dist 二进制）
 
@@ -55,16 +54,13 @@ bash scripts/build-dist.sh
 ## Prompt 注入（默认开启；空文件 = 等价不注入）
 
 默认占位文件（每个后端一个）：
-- `~/.claude/fish-agent-wrapper/codex-prompt.md`
-- `~/.claude/fish-agent-wrapper/claude-prompt.md`
-- `~/.claude/fish-agent-wrapper/gemini-prompt.md`
+- `~/.fish-agent-wrapper/prompts/codex-prompt.md`
+- `~/.fish-agent-wrapper/prompts/claude-prompt.md`
+- `~/.fish-agent-wrapper/prompts/gemini-prompt.md`
 
 规则：
 - wrapper 会读取对应后端的 prompt 文件；只有在内容非空时才会 prepend 到任务前面
 - 文件不存在 / 只有空白字符：等价“无注入”
-
-常用环境变量：
-- `FISH_AGENT_WRAPPER_CLAUDE_DIR`：Claude 配置根目录（默认 `~/.claude`）
 
 运行时配置（审批/绕过、超时、并行传播规则）详见：
 - `docs/runtime-config.md`

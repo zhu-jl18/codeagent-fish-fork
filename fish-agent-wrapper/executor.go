@@ -536,7 +536,7 @@ func shouldSkipTask(task TaskSpec, failed map[string]TaskResult) (bool, string) 
 
 // getStatusSymbols returns status symbols based on ASCII mode.
 func getStatusSymbols() (success, warning, failed string) {
-	if os.Getenv("FISH_AGENT_WRAPPER_ASCII_MODE") == "true" {
+	if parseBoolFlag(getEnv("FISH_AGENT_WRAPPER_ASCII_MODE", ""), false) {
 		return "PASS", "WARN", "FAIL"
 	}
 	return "✓", "⚠️", "✗"
@@ -841,17 +841,7 @@ func runCodexTaskWithContext(parentCtx context.Context, taskSpec TaskSpec, backe
 		return result
 	}
 
-	var claudeEnv map[string]string
-	if cfg.Backend == "claude" {
-		settings := loadMinimalClaudeSettings()
-		claudeEnv = settings.Env
-	}
-
-	// Load gemini env from ~/.gemini/.env if exists
-	var geminiEnv map[string]string
-	if cfg.Backend == "gemini" {
-		geminiEnv = loadGeminiEnv()
-	}
+	backendEnv := runtimeEnvForBackend(cfg.Backend)
 
 	useStdin := taskSpec.UseStdin
 	targetArg := taskSpec.Task
@@ -956,11 +946,8 @@ func runCodexTaskWithContext(parentCtx context.Context, taskSpec TaskSpec, backe
 
 	cmd := newCommandRunner(ctx, commandName, codexArgs...)
 
-	if cfg.Backend == "claude" && len(claudeEnv) > 0 {
-		cmd.SetEnv(claudeEnv)
-	}
-	if cfg.Backend == "gemini" && len(geminiEnv) > 0 {
-		cmd.SetEnv(geminiEnv)
+	if len(backendEnv) > 0 {
+		cmd.SetEnv(backendEnv)
 	}
 
 	// For backends that don't support -C flag (claude, gemini), set working directory via cmd.Dir

@@ -3,25 +3,34 @@
 This document is the single source of truth for runtime behavior related to:
 
 - approval / bypass flags per backend
-- environment variables
 - timeout behavior
 - parallel-mode propagation rules
+- config loading model
 
-## 1) Backend Approval/Bypass Matrix
+## 1) Single Config Source
+
+All runtime options are loaded from:
+
+```text
+~/.fish-agent-wrapper/.env
+```
+
+The wrapper does not read these control options from shell environment variables anymore.
+
+## 2) Backend Approval/Bypass Matrix
 
 | Backend | Wrapper-added flag | Default behavior | Disable/Change path |
 |---|---|---|---|
-| `codex` | `--dangerously-bypass-approvals-and-sandbox` | enabled by default | set `CODEX_BYPASS_SANDBOX=false` |
-| `claude` | `--dangerously-skip-permissions` | enabled by default | set `FISH_AGENT_WRAPPER_SKIP_PERMISSIONS=false` |
-| `gemini` | `-y` (`--yolo`) | always enabled in current wrapper | no wrapper env toggle currently |
+| `codex` | `--dangerously-bypass-approvals-and-sandbox` | enabled by default | set `CODEX_BYPASS_SANDBOX=false` in `.env` |
+| `claude` | `--dangerously-skip-permissions` | enabled by default | set `FISH_AGENT_WRAPPER_SKIP_PERMISSIONS=false` in `.env` |
+| `gemini` | `-y` (`--yolo`) | always enabled in current wrapper | no wrapper toggle currently |
 
 Notes:
 
-- "enabled by default" means env is unset, or explicitly true-like.
 - true-like values: `1`, `true`, `yes`, `on`.
 - false-like values: `0`, `false`, `no`, `off`.
 
-## 2) Environment Variables
+## 3) Runtime Keys in `.env`
 
 ### Approval/Bypass Controls
 
@@ -30,8 +39,7 @@ Notes:
   - false => wrapper does not append codex dangerous bypass flag
 
 - `FISH_AGENT_WRAPPER_SKIP_PERMISSIONS` (claude)
-  - unset/true => wrapper appends:
-    - claude: `--dangerously-skip-permissions`
+  - unset/true => wrapper appends `--dangerously-skip-permissions`
   - false => wrapper keeps permission prompts for claude
 
 ### Runtime Controls
@@ -47,13 +55,27 @@ Notes:
   - recommended: `8`
   - hard cap in wrapper: `100`
 
-- `FISH_AGENT_WRAPPER_CLAUDE_DIR`
-  - default: `~/.claude`
-  - used for prompt file + Claude settings resolution
+- `FISH_AGENT_WRAPPER_ASCII_MODE`
+  - `true` => ASCII status (`PASS/WARN/FAIL`)
+  - otherwise => Unicode status symbols
 
-## 3) Parallel Propagation Rule (`skip_permissions`)
+- `FISH_AGENT_WRAPPER_LOGGER_CLOSE_TIMEOUT_MS`
+  - default: `5000`
+  - `0` => wait indefinitely
 
-Parallel mode computes a global skip-permissions value from CLI/env, then applies:
+### Prompt Files
+
+Prompt files are resolved from:
+
+```text
+~/.fish-agent-wrapper/prompts/<backend>-prompt.md
+```
+
+Supported backends: `codex`, `claude`, `gemini`.
+
+## 4) Parallel Propagation Rule (`skip_permissions`)
+
+Parallel mode computes a global skip-permissions value from CLI/.env, then applies:
 
 ```text
 effective_task_skip = task.skip_permissions OR global_skip_permissions
@@ -63,58 +85,19 @@ Implication:
 
 - If global skip-permissions is true, a task cannot force it back to false.
 
-## 4) Timeout Layering (Important)
+## 5) Timeout Layering (Important)
 
 There are usually two timeout layers:
 
 - outer caller timeout (e.g., tool invocation timeout)
-- wrapper timeout (`CODEX_TIMEOUT`)
+- wrapper timeout (`CODEX_TIMEOUT` from `.env`)
 
 Effective timeout is whichever triggers first.
 
-If wrapper shows 2h but execution still stops around 5m, the outer caller timeout is likely lower.
+## 6) Editing Config
 
-## 5) How to Set Variables
-
-### One-off (single command)
+Edit the file directly:
 
 ```bash
-KEY=value fish-agent-wrapper --backend codex "task"
+${EDITOR:-vi} ~/.fish-agent-wrapper/.env
 ```
-
-### Current shell session
-
-```bash
-export KEY=value
-```
-
-### Persistent (bash)
-
-Add to `~/.bashrc`:
-
-```bash
-export KEY=value
-```
-
-### Persistent (fish)
-
-```fish
-set -Ux KEY value
-```
-
-## 6) Practical Presets
-
-### Default full-bypass behavior (project-preferred)
-
-- Do not set any of these toggles:
-  - `CODEX_BYPASS_SANDBOX`
-  - `FISH_AGENT_WRAPPER_SKIP_PERMISSIONS`
-
-### Stricter approval behavior
-
-```bash
-export CODEX_BYPASS_SANDBOX=false
-export FISH_AGENT_WRAPPER_SKIP_PERMISSIONS=false
-```
-
-Note: gemini still runs with `-y` in current wrapper implementation.

@@ -485,9 +485,9 @@ func readAgentPromptFile(path string) (string, error) {
 	}
 	absPath = filepath.Clean(absPath)
 
-	allowedDir := filepath.Clean(resolveClaudeDir())
+	allowedDir := filepath.Clean(resolvePromptBaseDir())
 	if allowedDir == "" {
-		return "", fmt.Errorf("failed to resolve claude dir for prompt file validation")
+		return "", fmt.Errorf("failed to resolve prompt base dir for prompt file validation")
 	}
 
 	allowedAbs, err := filepath.Abs(allowedDir)
@@ -609,14 +609,15 @@ Parallel mode examples:
 	%[1]s --parallel --backend gemini --full-output < tasks.txt
 
 		Prompt Injection (default-on):
-		    Prompt file path: ${FISH_AGENT_WRAPPER_CLAUDE_DIR:-~/.claude}/fish-agent-wrapper/<backend>-prompt.md
+			Prompt file path: ~/.fish-agent-wrapper/prompts/<backend>-prompt.md
 		    Backends: codex | claude | gemini
 		    Empty/missing prompt files behave like no injection.
 
-Environment Variables:
-    CODEX_TIMEOUT         Timeout in milliseconds (default: 7200000)
-    FISH_AGENT_WRAPPER_ASCII_MODE  Use ASCII symbols instead of Unicode (PASS/WARN/FAIL)
-    FISH_AGENT_WRAPPER_CLAUDE_DIR  Base Claude config dir (default: ~/.claude)
+	Runtime Config:
+	    ~/.fish-agent-wrapper/.env (single source of truth)
+	    Supported keys include: CODEX_TIMEOUT, CODEX_BYPASS_SANDBOX,
+	    FISH_AGENT_WRAPPER_SKIP_PERMISSIONS, FISH_AGENT_WRAPPER_ASCII_MODE,
+	    FISH_AGENT_WRAPPER_MAX_PARALLEL_WORKERS, FISH_AGENT_WRAPPER_LOGGER_CLOSE_TIMEOUT_MS
 
 Exit Codes:
     0    Success

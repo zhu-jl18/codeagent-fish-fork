@@ -23,6 +23,7 @@ import (
 
 // Helper to reset test hooks
 func resetTestHooks() {
+	resetRuntimeSettingsForTest()
 	stdinReader = os.Stdin
 	isTerminalFn = defaultIsTerminal
 	codexCommand = "codex"
@@ -1296,7 +1297,8 @@ func TestBackendParseArgs_DashDashStopsFlagParsing(t *testing.T) {
 
 func TestBackendParseArgs_SkipPermissions(t *testing.T) {
 	const envKey = "FISH_AGENT_WRAPPER_SKIP_PERMISSIONS"
-	t.Setenv(envKey, "true")
+	setRuntimeSettingsForTest(map[string]string{envKey: "true"})
+	t.Cleanup(resetRuntimeSettingsForTest)
 	os.Args = []string{"fish-agent-wrapper", "--backend", "codex", "task"}
 	cfg, err := parseArgs()
 	if err != nil {
@@ -1367,17 +1369,18 @@ func TestBackendParseBoolFlag(t *testing.T) {
 
 func TestBackendEnvFlagEnabled(t *testing.T) {
 	const key = "TEST_FLAG_ENABLED"
-	t.Setenv(key, "")
+	setRuntimeSettingsForTest(map[string]string{})
+	t.Cleanup(resetRuntimeSettingsForTest)
 	if envFlagEnabled(key) {
 		t.Fatalf("envFlagEnabled should be false when unset")
 	}
 
-	t.Setenv(key, "true")
+	setRuntimeSettingsForTest(map[string]string{key: "true"})
 	if !envFlagEnabled(key) {
 		t.Fatalf("envFlagEnabled should be true for 'true'")
 	}
 
-	t.Setenv(key, "no")
+	setRuntimeSettingsForTest(map[string]string{key: "no"})
 	if envFlagEnabled(key) {
 		t.Fatalf("envFlagEnabled should be false for 'no'")
 	}
@@ -1541,23 +1544,10 @@ code with special chars: $var "quotes"`
 	}
 }
 
-func TestClaudeSettings_EnvLoaded_NoModelFlag(t *testing.T) {
+func TestRuntimeEnvLoaded_NoModelFlag(t *testing.T) {
 	defer resetTestHooks()
-
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("USERPROFILE", home)
-
-	dir := filepath.Join(home, ".claude")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		t.Fatalf("MkdirAll: %v", err)
-	}
-
-	path := filepath.Join(dir, "settings.json")
-	data := []byte(`{"model":"ignored","env":{"FOO":"bar"}}`)
-	if err := os.WriteFile(path, data, 0o600); err != nil {
-		t.Fatalf("WriteFile: %v", err)
-	}
+	setRuntimeSettingsForTest(map[string]string{"FOO": "bar"})
+	t.Cleanup(resetRuntimeSettingsForTest)
 
 	makeRunner := func(gotName *string, gotArgs *[]string, fake **fakeCmd) func(context.Context, string, ...string) commandRunner {
 		return func(ctx context.Context, name string, args ...string) commandRunner {
@@ -1665,10 +1655,12 @@ func TestRun_DefaultPromptInjectionPrefixesTask(t *testing.T) {
 			isTerminalFn = func() bool { return true }
 			stdinReader = strings.NewReader("")
 
-			claudeDir := t.TempDir()
-			t.Setenv("FISH_AGENT_WRAPPER_CLAUDE_DIR", claudeDir)
+			home := t.TempDir()
+			t.Setenv("HOME", home)
+			t.Setenv("USERPROFILE", home)
 
-			promptFile := filepath.Join(claudeDir, "fish-agent-wrapper", tt.backend+"-prompt.md")
+			promptBase := filepath.Join(home, ".fish-agent-wrapper", "prompts")
+			promptFile := filepath.Join(promptBase, tt.backend+"-prompt.md")
 			if tt.prompt != "" {
 				if err := os.MkdirAll(filepath.Dir(promptFile), 0o755); err != nil {
 					t.Fatalf("MkdirAll: %v", err)
@@ -1696,8 +1688,8 @@ func TestRun_DefaultPromptInjectionPrefixesTask(t *testing.T) {
 }
 
 func TestRunBuildCodexArgs_NewMode(t *testing.T) {
-	const key = "CODEX_BYPASS_SANDBOX"
-	t.Setenv(key, "false")
+	setRuntimeSettingsForTest(map[string]string{"CODEX_BYPASS_SANDBOX": "false"})
+	t.Cleanup(resetRuntimeSettingsForTest)
 
 	cfg := &Config{Mode: "new", WorkDir: "/test/dir"}
 	args := buildCodexArgs(cfg, "my task")
@@ -1719,8 +1711,8 @@ func TestRunBuildCodexArgs_NewMode(t *testing.T) {
 }
 
 func TestRunBuildCodexArgs_ResumeMode(t *testing.T) {
-	const key = "CODEX_BYPASS_SANDBOX"
-	t.Setenv(key, "false")
+	setRuntimeSettingsForTest(map[string]string{"CODEX_BYPASS_SANDBOX": "false"})
+	t.Cleanup(resetRuntimeSettingsForTest)
 
 	cfg := &Config{Mode: "resume", SessionID: "session-abc"}
 	args := buildCodexArgs(cfg, "-")
@@ -1743,8 +1735,8 @@ func TestRunBuildCodexArgs_ResumeMode(t *testing.T) {
 }
 
 func TestRunBuildCodexArgs_ResumeMode_EmptySessionHandledGracefully(t *testing.T) {
-	const key = "CODEX_BYPASS_SANDBOX"
-	t.Setenv(key, "false")
+	setRuntimeSettingsForTest(map[string]string{"CODEX_BYPASS_SANDBOX": "false"})
+	t.Cleanup(resetRuntimeSettingsForTest)
 
 	cfg := &Config{Mode: "resume", SessionID: "   ", WorkDir: "/test/dir"}
 	args := buildCodexArgs(cfg, "task")
@@ -1771,7 +1763,8 @@ func TestRunBuildCodexArgs_BypassSandboxEnvTrue(t *testing.T) {
 	setLogger(logger)
 	defer closeLogger()
 
-	t.Setenv("CODEX_BYPASS_SANDBOX", "true")
+	setRuntimeSettingsForTest(map[string]string{"CODEX_BYPASS_SANDBOX": "true"})
+	t.Cleanup(resetRuntimeSettingsForTest)
 
 	cfg := &Config{Mode: "new", WorkDir: "/test/dir"}
 	args := buildCodexArgs(cfg, "my task")
@@ -1848,7 +1841,8 @@ func TestBackendSelectBackend_DefaultOnEmpty(t *testing.T) {
 }
 
 func TestBackendBuildArgs_CodexBackend(t *testing.T) {
-	t.Setenv("CODEX_BYPASS_SANDBOX", "false")
+	setRuntimeSettingsForTest(map[string]string{"CODEX_BYPASS_SANDBOX": "false"})
+	t.Cleanup(resetRuntimeSettingsForTest)
 	backend := CodexBackend{}
 	cfg := &Config{Mode: "new", WorkDir: "/test/dir"}
 	got := backend.BuildArgs(cfg, "task")
@@ -1870,7 +1864,8 @@ func TestBackendBuildArgs_CodexBackend(t *testing.T) {
 }
 
 func TestBackendBuildArgs_ClaudeBackend(t *testing.T) {
-	t.Setenv("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS", "false")
+	setRuntimeSettingsForTest(map[string]string{"FISH_AGENT_WRAPPER_SKIP_PERMISSIONS": "false"})
+	t.Cleanup(resetRuntimeSettingsForTest)
 	backend := ClaudeBackend{}
 	cfg := &Config{Mode: "new", WorkDir: defaultWorkdir}
 	got := backend.BuildArgs(cfg, "todo")
@@ -1890,7 +1885,8 @@ func TestBackendBuildArgs_ClaudeBackend(t *testing.T) {
 }
 
 func TestClaudeBackendBuildArgs_OutputValidation(t *testing.T) {
-	t.Setenv("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS", "false")
+	setRuntimeSettingsForTest(map[string]string{"FISH_AGENT_WRAPPER_SKIP_PERMISSIONS": "false"})
+	t.Cleanup(resetRuntimeSettingsForTest)
 	backend := ClaudeBackend{}
 	cfg := &Config{Mode: "resume"}
 	target := "ensure-flags"
@@ -1987,7 +1983,8 @@ func TestRunResolveTimeout(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv("CODEX_TIMEOUT", tt.envVal)
+			setRuntimeSettingsForTest(map[string]string{"CODEX_TIMEOUT": tt.envVal})
+			t.Cleanup(resetRuntimeSettingsForTest)
 			got := resolveTimeout()
 			if got != tt.want {
 				t.Errorf("resolveTimeout() with env=%q = %v, want %v", tt.envVal, got, tt.want)
@@ -2375,11 +2372,12 @@ func TestRunGetEnv(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			settings := map[string]string{}
 			if tt.setEnv {
-				t.Setenv(tt.key, tt.envVal)
-			} else {
-				t.Setenv(tt.key, "")
+				settings[tt.key] = tt.envVal
 			}
+			setRuntimeSettingsForTest(settings)
+			t.Cleanup(resetRuntimeSettingsForTest)
 
 			got := getEnv(tt.key, tt.defaultVal)
 			if got != tt.want {
@@ -3775,7 +3773,8 @@ do two`)
 		defer resetTestHooks()
 		cleanupHook = func() {}
 		cleanupLogsFn = func() (CleanupStats, error) { return CleanupStats{}, nil }
-		t.Setenv("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS", "false")
+		setRuntimeSettingsForTest(map[string]string{"FISH_AGENT_WRAPPER_SKIP_PERMISSIONS": "false"})
+		t.Cleanup(resetRuntimeSettingsForTest)
 
 		runCodexTaskFn = func(task TaskSpec, timeout int) TaskResult {
 			if !task.SkipPermissions {
@@ -4737,7 +4736,8 @@ func TestResolveMaxParallelWorkers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv("FISH_AGENT_WRAPPER_MAX_PARALLEL_WORKERS", tt.envValue)
+			setRuntimeSettingsForTest(map[string]string{"FISH_AGENT_WRAPPER_MAX_PARALLEL_WORKERS": tt.envValue})
+			t.Cleanup(resetRuntimeSettingsForTest)
 
 			got := resolveMaxParallelWorkers()
 			if got != tt.want {

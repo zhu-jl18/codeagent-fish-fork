@@ -242,7 +242,7 @@ func (l *Logger) Close() error {
 func loggerCloseTimeout() time.Duration {
 	const defaultTimeout = 5 * time.Second
 
-	raw := strings.TrimSpace(os.Getenv("FISH_AGENT_WRAPPER_LOGGER_CLOSE_TIMEOUT_MS"))
+	raw := strings.TrimSpace(getEnv("FISH_AGENT_WRAPPER_LOGGER_CLOSE_TIMEOUT_MS", ""))
 	if raw == "" {
 		return defaultTimeout
 	}

@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
-"""Installer for fish-agent-wrapper (personal setup).
+"""Installer for fish-agent-wrapper runtime assets.
 
 Installs:
-- /dev workflow (command + dev-plan-generator agent)
-- fish-agent-wrapper skill
-- product-requirements (PRD) skill
-- Append managed workflow rules to CLAUDE.md (non-destructive)
 - fish-agent-wrapper binary (copied from prebuilt artifacts in ./dist)
-- per-backend prompt placeholder files (empty by default)
+- per-backend prompt placeholders under ~/.fish-agent-wrapper/prompts
+- ~/.fish-agent-wrapper/.env template for runtime configuration
 
 Targets:
 - WSL2/Linux
@@ -26,12 +23,9 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parent
-DEFAULT_INSTALL_DIR = "~/.claude"
+DEFAULT_INSTALL_DIR = "~/.fish-agent-wrapper"
 
 BACKENDS = ("codex", "claude", "gemini")
-
-CLAUDE_BLOCK_BEGIN = "<!-- BEGIN FISH-AGENT-WRAPPER:MANAGED -->"
-CLAUDE_BLOCK_END = "<!-- END FISH-AGENT-WRAPPER:MANAGED -->"
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -39,18 +33,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument(
         "--install-dir",
         default=DEFAULT_INSTALL_DIR,
-        help="Install directory (default: ~/.claude)",
+        help="Install directory (default: ~/.fish-agent-wrapper)",
     )
     p.add_argument(
         "--force",
         action="store_true",
-        help="Overwrite existing files and refresh the managed CLAUDE.md block",
+        help="Overwrite existing files",
     )
     p.add_argument(
         "--skip-wrapper",
         "--skip-build",
         action="store_true",
-        help="Skip installing fish-agent-wrapper (only install config/assets)",
+        help="Skip installing fish-agent-wrapper binary (only install runtime config/assets)",
     )
     return p.parse_args(argv)
 
@@ -73,42 +67,30 @@ def _write_if_missing(path: Path, content: str, *, force: bool) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def _strip_managed_claude_block(text: str) -> str:
-    start = text.find(CLAUDE_BLOCK_BEGIN)
-    if start == -1:
-        return text
-    end = text.find(CLAUDE_BLOCK_END, start)
-    if end == -1:
-        return text[:start]
-    end += len(CLAUDE_BLOCK_END)
-    return text[:start] + text[end:]
-
-
-def _apply_claude_md(install_dir: Path, *, force: bool) -> bool:
-    add_path = REPO_ROOT / "memory" / "CLAUDE-add.md"
-    add = add_path.read_text(encoding="utf-8").rstrip()
-
-    block = f"{CLAUDE_BLOCK_BEGIN}\n{add}\n{CLAUDE_BLOCK_END}\n"
-
-    dst = install_dir / "CLAUDE.md"
-    existing = dst.read_text(encoding="utf-8") if dst.exists() else ""
-    if CLAUDE_BLOCK_BEGIN in existing and not force:
-        return False
-
-    base = _strip_managed_claude_block(existing).rstrip()
-    if base:
-        base += "\n\n"
-
-    _ensure_dir(dst.parent)
-    dst.write_text(base + block, encoding="utf-8")
-    return True
-
-
 def _install_prompts(install_dir: Path, *, force: bool) -> None:
-    wrapper_dir = install_dir / "fish-agent-wrapper"
+    wrapper_dir = install_dir / "prompts"
     _ensure_dir(wrapper_dir)
     for backend in BACKENDS:
         _write_if_missing(wrapper_dir / f"{backend}-prompt.md", "", force=force)
+
+
+def _install_env_template(install_dir: Path, *, force: bool) -> None:
+    env_template = (
+        "# fish-agent-wrapper runtime config\n"
+        "# Values are loaded only from this file.\n\n"
+        "# CODEX_TIMEOUT in milliseconds (default: 7200000)\n"
+        "CODEX_TIMEOUT=7200000\n\n"
+        "# true/false controls\n"
+        "CODEX_BYPASS_SANDBOX=true\n"
+        "FISH_AGENT_WRAPPER_SKIP_PERMISSIONS=true\n"
+        "FISH_AGENT_WRAPPER_ASCII_MODE=false\n"
+        "FISH_AGENT_WRAPPER_MAX_PARALLEL_WORKERS=0\n"
+        "FISH_AGENT_WRAPPER_LOGGER_CLOSE_TIMEOUT_MS=5000\n\n"
+        "# backend credentials (examples)\n"
+        "# ANTHROPIC_API_KEY=\n"
+        "# GEMINI_API_KEY=\n"
+    )
+    _write_if_missing(install_dir / ".env", env_template, force=force)
 
 
 def _get_artifact_name() -> str:
@@ -201,31 +183,8 @@ def main(argv: list[str] | None = None) -> int:
 
     _ensure_dir(install_dir)
 
-    claude_updated = _apply_claude_md(install_dir, force=args.force)
-
-    _copy_file(
-        REPO_ROOT / "dev-workflow" / "commands" / "dev.md",
-        install_dir / "commands" / "dev.md",
-        force=args.force,
-    )
-    _copy_file(
-        REPO_ROOT / "dev-workflow" / "agents" / "dev-plan-generator.md",
-        install_dir / "agents" / "dev-plan-generator.md",
-        force=args.force,
-    )
-
-    _copy_file(
-        REPO_ROOT / "skills" / "fish-agent-wrapper" / "SKILL.md",
-        install_dir / "skills" / "fish-agent-wrapper" / "SKILL.md",
-        force=args.force,
-    )
-    _copy_file(
-        REPO_ROOT / "skills" / "product-requirements" / "SKILL.md",
-        install_dir / "skills" / "product-requirements" / "SKILL.md",
-        force=args.force,
-    )
-
     _install_prompts(install_dir, force=args.force)
+    _install_env_template(install_dir, force=args.force)
 
     wrapper_path: Path | None = None
     if not args.skip_wrapper:
@@ -237,22 +196,15 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
     print(f"Installed to: {install_dir}")
-    if claude_updated:
-        print(f"- claude:   {install_dir / 'CLAUDE.md'} (appended managed workflow rules)")
-    else:
-        print(f"- claude:   {install_dir / 'CLAUDE.md'} (kept existing managed rules; use --force to refresh)")
-    print(f"- commands: {install_dir / 'commands'}")
-    print(f"- agents:   {install_dir / 'agents'}")
-    print(f"- skills:   {install_dir / 'skills'}")
-    print(f"- prompts:  {install_dir / 'fish-agent-wrapper'} (*-prompt.md placeholders)")
+    print(f"- env:      {install_dir / '.env'}")
+    print(f"- prompts:  {install_dir / 'prompts'} (*-prompt.md placeholders)")
     if wrapper_path is not None:
         print(f"- wrapper:  {wrapper_path} (copied from ./dist)")
 
-    if str(install_dir) != str(Path(DEFAULT_INSTALL_DIR).expanduser().resolve()):
-        print("")
-        print("Note:")
-        print(f"- You used a non-default install dir.")
-        print(f"- Set FISH_AGENT_WRAPPER_CLAUDE_DIR={install_dir} so fish-agent-wrapper can find prompts/settings.")
+    print("")
+    print("Manual setup required:")
+    print("- Copy dev/skill markdown files manually into each target CLI root or project scope as needed.")
+    print("- This installer does not auto-copy skills/commands/agents into Claude/Codex/iFlow/Amp roots.")
 
     if wrapper_path is not None:
         _print_path_hint(install_dir / "bin")
