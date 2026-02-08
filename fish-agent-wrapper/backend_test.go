@@ -145,7 +145,7 @@ func TestClaudeBuildArgs_GeminiAndCodexModes(t *testing.T) {
 		t.Setenv("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS", "false")
 		cfg := &Config{Mode: "new"}
 		got := backend.BuildArgs(cfg, "task")
-		want := []string{"--no-color", "--no-notifications", "--execute", "--stream-json", "--mode", "smart", "task"}
+		want := []string{"--no-color", "--no-notifications", "--execute", "task", "--stream-json", "--mode", "smart"}
 		if !reflect.DeepEqual(got, want) {
 			t.Fatalf("got %v, want %v", got, want)
 		}
@@ -156,7 +156,7 @@ func TestClaudeBuildArgs_GeminiAndCodexModes(t *testing.T) {
 		t.Setenv("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS", "false")
 		cfg := &Config{Mode: "resume", SessionID: "T-123"}
 		got := backend.BuildArgs(cfg, "task")
-		want := []string{"--no-color", "--no-notifications", "threads", "continue", "T-123", "--execute", "--stream-json", "--mode", "smart", "task"}
+		want := []string{"--no-color", "--no-notifications", "threads", "continue", "T-123", "--execute", "task", "--stream-json", "--mode", "smart"}
 		if !reflect.DeepEqual(got, want) {
 			t.Fatalf("got %v, want %v", got, want)
 		}
@@ -178,7 +178,7 @@ func TestClaudeBuildArgs_GeminiAndCodexModes(t *testing.T) {
 		t.Setenv("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS", "false")
 		cfg := &Config{Mode: "new", SkipPermissions: true}
 		got := backend.BuildArgs(cfg, "task")
-		want := []string{"--no-color", "--no-notifications", "--dangerously-allow-all", "--execute", "--stream-json", "--mode", "smart", "task"}
+		want := []string{"--no-color", "--no-notifications", "--dangerously-allow-all", "--execute", "task", "--stream-json", "--mode", "smart"}
 		if !reflect.DeepEqual(got, want) {
 			t.Fatalf("got %v, want %v", got, want)
 		}
@@ -190,7 +190,18 @@ func TestClaudeBuildArgs_GeminiAndCodexModes(t *testing.T) {
 		t.Setenv("FISH_AGENT_WRAPPER_AMPCODE_MODE", "rush")
 		cfg := &Config{Mode: "new"}
 		got := backend.BuildArgs(cfg, "task")
-		want := []string{"--no-color", "--no-notifications", "--execute", "--stream-json", "--mode", "rush", "task"}
+		want := []string{"--no-color", "--no-notifications", "--execute", "task", "--stream-json", "--mode", "rush"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("got %v, want %v", got, want)
+		}
+	})
+
+	t.Run("ampcode resume stdin keeps execute without inline message", func(t *testing.T) {
+		backend := AmpcodeBackend{}
+		t.Setenv("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS", "false")
+		cfg := &Config{Mode: "resume", SessionID: "T-321"}
+		got := backend.BuildArgs(cfg, "-")
+		want := []string{"--no-color", "--no-notifications", "threads", "continue", "T-321", "--execute", "--stream-json", "--mode", "smart"}
 		if !reflect.DeepEqual(got, want) {
 			t.Fatalf("got %v, want %v", got, want)
 		}

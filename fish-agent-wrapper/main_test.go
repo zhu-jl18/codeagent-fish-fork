@@ -1969,7 +1969,7 @@ func TestBackendBuildArgs_AmpcodeBackend(t *testing.T) {
 	t.Setenv("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS", "false")
 	cfg := &Config{Mode: "new"}
 	got := backend.BuildArgs(cfg, "task")
-	want := []string{"--no-color", "--no-notifications", "--execute", "--stream-json", "--mode", "smart", "task"}
+	want := []string{"--no-color", "--no-notifications", "--execute", "task", "--stream-json", "--mode", "smart"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("BuildArgs() mismatch:\ngot: %v\nwant: %v", got, want)
 	}

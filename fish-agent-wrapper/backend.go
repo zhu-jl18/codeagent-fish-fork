@@ -223,11 +223,13 @@ func buildAmpcodeArgs(cfg *Config, targetArg string) []string {
 		args = append(args, "--dangerously-allow-all")
 	}
 
-	args = append(args, "--execute", "--stream-json", "--mode", mode)
-
-	if targetArg != "-" {
-		args = append(args, targetArg)
+	if targetArg == "-" {
+		args = append(args, "--execute")
+	} else {
+		args = append(args, "--execute", targetArg)
 	}
+
+	args = append(args, "--stream-json", "--mode", mode)
 
 	return args
 }
