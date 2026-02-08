@@ -140,72 +140,6 @@ func TestVariousBackendsBuildArgs(t *testing.T) {
 		}
 	})
 
-	t.Run("ampcode new mode uses execute stream-json smart by default", func(t *testing.T) {
-		backend := AmpcodeBackend{}
-		t.Setenv("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS", "false")
-		cfg := &Config{Mode: "new"}
-		got := backend.BuildArgs(cfg, "task")
-		want := []string{"--no-color", "--no-notifications", "--execute", "task", "--stream-json", "--mode", "smart"}
-		if !reflect.DeepEqual(got, want) {
-			t.Fatalf("got %v, want %v", got, want)
-		}
-	})
-
-	t.Run("ampcode resume mode uses thread continue", func(t *testing.T) {
-		backend := AmpcodeBackend{}
-		t.Setenv("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS", "false")
-		cfg := &Config{Mode: "resume", SessionID: "T-123"}
-		got := backend.BuildArgs(cfg, "task")
-		want := []string{"--no-color", "--no-notifications", "threads", "continue", "T-123", "--execute", "task", "--stream-json", "--mode", "smart"}
-		if !reflect.DeepEqual(got, want) {
-			t.Fatalf("got %v, want %v", got, want)
-		}
-	})
-
-	t.Run("ampcode stdin mode omits positional prompt", func(t *testing.T) {
-		backend := AmpcodeBackend{}
-		t.Setenv("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS", "false")
-		cfg := &Config{Mode: "new"}
-		got := backend.BuildArgs(cfg, "-")
-		want := []string{"--no-color", "--no-notifications", "--execute", "--stream-json", "--mode", "smart"}
-		if !reflect.DeepEqual(got, want) {
-			t.Fatalf("got %v, want %v", got, want)
-		}
-	})
-
-	t.Run("ampcode skip permissions adds dangerously allow all", func(t *testing.T) {
-		backend := AmpcodeBackend{}
-		t.Setenv("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS", "false")
-		cfg := &Config{Mode: "new", SkipPermissions: true}
-		got := backend.BuildArgs(cfg, "task")
-		want := []string{"--no-color", "--no-notifications", "--dangerously-allow-all", "--execute", "task", "--stream-json", "--mode", "smart"}
-		if !reflect.DeepEqual(got, want) {
-			t.Fatalf("got %v, want %v", got, want)
-		}
-	})
-
-	t.Run("ampcode mode can be overridden by env", func(t *testing.T) {
-		backend := AmpcodeBackend{}
-		t.Setenv("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS", "false")
-		t.Setenv("FISH_AGENT_WRAPPER_AMPCODE_MODE", "rush")
-		cfg := &Config{Mode: "new"}
-		got := backend.BuildArgs(cfg, "task")
-		want := []string{"--no-color", "--no-notifications", "--execute", "task", "--stream-json", "--mode", "rush"}
-		if !reflect.DeepEqual(got, want) {
-			t.Fatalf("got %v, want %v", got, want)
-		}
-	})
-
-	t.Run("ampcode resume stdin keeps execute without inline message", func(t *testing.T) {
-		backend := AmpcodeBackend{}
-		t.Setenv("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS", "false")
-		cfg := &Config{Mode: "resume", SessionID: "T-321"}
-		got := backend.BuildArgs(cfg, "-")
-		want := []string{"--no-color", "--no-notifications", "threads", "continue", "T-321", "--execute", "--stream-json", "--mode", "smart"}
-		if !reflect.DeepEqual(got, want) {
-			t.Fatalf("got %v, want %v", got, want)
-		}
-	})
 }
 
 func TestClaudeBuildArgs_BackendMetadata(t *testing.T) {
@@ -217,7 +151,6 @@ func TestClaudeBuildArgs_BackendMetadata(t *testing.T) {
 		{backend: CodexBackend{}, name: "codex", command: "codex"},
 		{backend: ClaudeBackend{}, name: "claude", command: "claude"},
 		{backend: GeminiBackend{}, name: "gemini", command: "gemini"},
-		{backend: AmpcodeBackend{}, name: "ampcode", command: "amp"},
 	}
 
 	for _, tt := range tests {

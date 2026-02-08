@@ -1,17 +1,17 @@
 ---
 name: fish-agent-wrapper
-description: Execute fish-agent-wrapper for multi-backend AI code tasks. Supports Codex, Claude, Gemini, Ampcode, with file references (@syntax) and structured output.
+description: Execute fish-agent-wrapper for multi-backend AI code tasks. Supports Codex, Claude, Gemini, with file references (@syntax) and structured output.
 ---
 
 # fish-agent-wrapper Integration
 
 ## Overview
 
-Execute fish-agent-wrapper commands with pluggable AI backends(Codex, Claude, Gemini, Ampcode). Supports file references via `@` syntax, parallel task execution with backend selection, and configurable security controls.
+Execute fish-agent-wrapper commands with pluggable AI backends(Codex, Claude, Gemini). Supports file references via `@` syntax, parallel task execution with backend selection, and configurable security controls.
 
 ## When to Use
 
-When the user explicitly requests a specific backend (Codex, Claude, Gemini, or Ampcode), mentions fish-agent-wrapper, or when a skill or command definition explicitly declares a dependency on this skill.
+When the user explicitly requests a specific backend (Codex, Claude, or Gemini), mentions fish-agent-wrapper, or when a skill or command definition explicitly declares a dependency on this skill.
 
 Applicable scenarios include but are not limited to:
 - Complex code analysis requiring deep understanding
@@ -33,7 +33,6 @@ EOF
 fish-agent-wrapper --backend codex "simple task" [working_dir]
 fish-agent-wrapper --backend claude "simple task" [working_dir]
 fish-agent-wrapper --backend gemini "simple task" [working_dir]
-fish-agent-wrapper --backend ampcode "simple task" [working_dir]
 ```
 
 ## Common Parameters
@@ -46,7 +45,7 @@ fish-agent-wrapper --backend ampcode "simple task" [working_dir]
   - Resume uses its own forms: inline `fish-agent-wrapper --backend <backend> resume <session_id> "<follow-up task>"` and stdin `fish-agent-wrapper --backend <backend> resume <session_id> -`.
 
 - `--backend <backend>` (required)
-  - Select backend explicitly: `codex | claude | gemini | ampcode`.
+  - Select backend explicitly: `codex | claude | gemini`.
   - Must be present in both new and resume modes.
   - In parallel mode, this is the global default backend.
   - If a task block defines `backend`, it overrides the global default for that task.
@@ -66,7 +65,7 @@ fish-agent-wrapper --backend ampcode "simple task" [working_dir]
   - **Summary (default)**: Structured report with changes, output, verification, and review summary.
   - **Full (`--full-output`)**: Complete task messages. Use only when debugging specific failures.
   - Scope: `--full-output` is valid only with `--parallel`; single-task mode does not support this flag.
-  - Backend behavior: mode selection is wrapper-level and works the same for `codex | claude | gemini | ampcode`.
+  - Backend behavior: mode selection is wrapper-level and works the same for `codex | claude | gemini`.
 
 ## Return Format:
 
@@ -89,7 +88,6 @@ Quiklook at the differences between backends:
 | codex | `--backend codex` | OpenAI Codex (default) | Code analysis, complex development, debugging |
 | claude | `--backend claude` | Anthropic Claude | Quick fixes, documentation, prompts |
 | gemini | `--backend gemini` | Google Gemini | UI/UX prototyping |
-| ampcode | `--backend ampcode` | Sourcegraph Amp | Review tasks, debugging |
 
 For detailed guidance:
 
@@ -111,19 +109,13 @@ For detailed guidance:
 - Interactive element generation with accessibility support
 - Example: "Create a responsive dashboard layout with sidebar navigation and data visualization cards"
 
-**Ampcode**:
-- Fast code reviews and improvement suggestions
-- Plan review and feedback for development proposals
-- Debugging assistance when Codex fails.
-- Example: "Review @.claude/specs/auth/dev-plan.md and give feedback on potential issues and improvements"
-
 A Typical Backend Switching Example:
-- Start with Codex for analysis, switch to Claude for documentation, then Gemini for UI implementation. Use Ampcode for supplementary tasks such as plan review and suggestions.
+- Start with Codex for analysis, switch to Claude for documentation, then Gemini for UI implementation.
 - Use per-task backend selection in parallel mode to optimize for each task's strengths
 
 ## Resume Session
 
-All four backends support resume mode: `codex | claude | gemini | ampcode`.
+Supported backends all support resume mode: `codex | claude | gemini`.
 
 **1) Standard resume (HEREDOC)**
 ```bash
@@ -147,12 +139,6 @@ session_id: sid_claude_1
 ---CONTENT---
 follow-up for claude session
 
----TASK---
-id: resume-b
-backend: ampcode
-session_id: T-amp-1
----CONTENT---
-follow-up for ampcode session
 EOF
 ```
 
@@ -165,7 +151,7 @@ Resume mode relies on backend session context.
  Resume identifier contract:
 - Use the wrapper-returned `SESSION_ID` as the source of truth for follow-up resume commands.
 - Standard form: `fish-agent-wrapper --backend <backend> resume <SESSION_ID> ...`.
-- Backend-native alternatives such as `latest` or numeric indices may exist, but they are optional shortcuts, not the default workflow contract.
+
 
 ## Parallel Execution
 
@@ -176,7 +162,7 @@ Parallel mode uses a dependency DAG scheduler.
 - Tasks in the same DAG layer run concurrently; the next layer starts only after the current layer finishes.
 - If a dependency fails, dependent tasks are skipped.
 - Invalid dependency IDs or dependency cycles fail fast before execution starts.
-- `--backend` in parallel mode is a required global fallback; tasks without `backend` use it. Usally set to `codex`.
+- `--backend` in parallel mode is a required global fallback; tasks without `backend` use it. Usually set to `codex`.
 - `backend` inside a task block overrides the global fallback for that task.
 
 ASCII execution model:
@@ -294,7 +280,7 @@ Host-agnostic tool-call template (field names vary by runtime):
 Field names depend on the host tool schema.
 Timeout policy: always set explicit timeout by task complexity; do not rely on implicit defaults.
 
-Note: `--backend` is required; supported values: `codex | claude | gemini | ampcode`
+Note: `--backend` is required; supported values: `codex | claude | gemini`
 ```
 
 **Parallel Tasks**:
@@ -359,7 +345,7 @@ Note: Global --backend is required; per-task backend is optional
 - Hard rule: kill/terminate is allowed **only when the user explicitly requests it**.
 - Do not kill processes automatically because of long runtime or wait timeout.
 - Use staged termination and stop escalation as soon as processes exit.
-- Name-based global cleanup (`pkill -x codex/claude/gemini/amp`) is prohibited.
+- Name-based global cleanup (`pkill -x codex/claude/gemini`) is prohibited.
 
 1. **Graceful stop wrapper first**:
    ```bash
@@ -393,5 +379,5 @@ Note: Global --backend is required; per-task backend is optional
 4. **Post-check**:
    ```bash
    pgrep -fa fish-agent-wrapper
-   pgrep -fa 'codex|claude|gemini|amp'
+   pgrep -fa 'codex|claude|gemini'
    ```

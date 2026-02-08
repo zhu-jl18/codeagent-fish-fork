@@ -1,16 +1,13 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"strings"
-	"sync"
 	"testing"
 )
 
-func TestResumeConversation_AllBackends(t *testing.T) {
+func TestResumeConversation_SupportedBackends(t *testing.T) {
 	type tc struct {
 		name         string
 		backend      Backend
@@ -84,28 +81,6 @@ func TestResumeConversation_AllBackends(t *testing.T) {
 				return nil
 			},
 		},
-		{
-			name:      "ampcode",
-			backend:   AmpcodeBackend{},
-			sessionID: "T-ampcode",
-			newOutput: `{"type":"assistant","session_id":"T-ampcode","message":{"content":[{"type":"text","text":"M1"}]}}` + "\n",
-			resumeOutput: `{"type":"assistant","session_id":"T-ampcode","message":{"content":[{"type":"text","text":"M2"}]}}` + "\n" +
-				`{"type":"done","session_id":"T-ampcode"}` + "\n",
-			checkNewArgs: func(args []string) error {
-				joined := " " + strings.Join(args, " ") + " "
-				if strings.Contains(joined, " threads continue ") {
-					return fmt.Errorf("unexpected threads continue in args: %v", args)
-				}
-				return nil
-			},
-			checkResArgs: func(args []string, sid string) error {
-				joined := " " + strings.Join(args, " ") + " "
-				if !strings.Contains(joined, " threads continue "+sid+" ") {
-					return fmt.Errorf("missing threads continue %s in args: %v", sid, args)
-				}
-				return nil
-			},
-		},
 	}
 
 	for _, tt := range cases {
@@ -171,211 +146,5 @@ func TestResumeConversation_AllBackends(t *testing.T) {
 				t.Fatalf("resume session=%q, want %q (res=%+v)", second.SessionID, tt.sessionID, second)
 			}
 		})
-	}
-}
-
-func TestRunParallel_AllBackends_NewMode(t *testing.T) {
-	defer resetTestHooks()
-	t.Setenv("CODEX_BYPASS_SANDBOX", "false")
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("USERPROFILE", home)
-	t.Setenv("FISH_AGENT_WRAPPER_CLAUDE_DIR", t.TempDir())
-
-	os.Args = []string{"fish-agent-wrapper", "--parallel", "--backend", "codex"}
-	stdinReader = bytes.NewReader([]byte(
-		`---TASK---
-id: codex
-backend: codex
----CONTENT---
-hello-codex
----TASK---
-id: claude
-backend: claude
----CONTENT---
-hello-claude
----TASK---
-id: gemini
-backend: gemini
----CONTENT---
-hello-gemini
----TASK---
-id: amp
-backend: ampcode
----CONTENT---
-hello-amp
-`,
-	))
-
-	var (
-		mu      sync.Mutex
-		runErr  error
-		seenCmd = make(map[string]bool)
-	)
-
-	newCommandRunner = func(ctx context.Context, name string, args ...string) commandRunner {
-		joined := " " + strings.Join(args, " ") + " "
-		mu.Lock()
-		defer mu.Unlock()
-		if runErr != nil {
-			return newFakeCmd(fakeCmdConfig{})
-		}
-		seenCmd[name] = true
-		switch name {
-		case "codex":
-			if strings.Contains(joined, " resume ") {
-				runErr = fmt.Errorf("codex new unexpectedly contains resume: %v", args)
-			}
-			out := `{"type":"thread.started","thread_id":"tid_codex"}` + "\n" +
-				`{"type":"item.completed","item":{"type":"agent_message","text":"OK"}}` + "\n"
-			return newFakeCmd(fakeCmdConfig{StdoutPlan: []fakeStdoutEvent{{Data: out}}})
-		case "claude":
-			if strings.Contains(joined, " -r ") {
-				runErr = fmt.Errorf("claude new unexpectedly contains -r: %v", args)
-			}
-			out := `{"type":"result","session_id":"sid_claude","result":"OK"}` + "\n"
-			return newFakeCmd(fakeCmdConfig{StdoutPlan: []fakeStdoutEvent{{Data: out}}})
-		case "gemini":
-			if strings.Contains(joined, " -r ") {
-				runErr = fmt.Errorf("gemini new unexpectedly contains -r: %v", args)
-			}
-			out := `{"type":"result","session_id":"sid_gemini","status":"success","content":"OK"}` + "\n"
-			return newFakeCmd(fakeCmdConfig{StdoutPlan: []fakeStdoutEvent{{Data: out}}})
-		case "amp":
-			if strings.Contains(joined, " threads continue ") {
-				runErr = fmt.Errorf("ampcode new unexpectedly contains threads continue: %v", args)
-			}
-			out := `{"type":"assistant","session_id":"T-amp-new","message":{"content":[{"type":"text","text":"OK"}]}}` + "\n" +
-				`{"type":"done","session_id":"T-amp-new"}` + "\n"
-			return newFakeCmd(fakeCmdConfig{StdoutPlan: []fakeStdoutEvent{{Data: out}}})
-		default:
-			runErr = fmt.Errorf("unexpected command: %s (args=%v)", name, args)
-			return newFakeCmd(fakeCmdConfig{})
-		}
-	}
-
-	var exitCode int
-	out := captureOutput(t, func() { exitCode = run() })
-
-	if exitCode != 0 {
-		t.Fatalf("run() exit=%d, want 0 (out=%q)", exitCode, out)
-	}
-	if runErr != nil {
-		t.Fatalf("runner error: %v", runErr)
-	}
-	for _, cmd := range []string{"codex", "claude", "gemini", "amp"} {
-		if !seenCmd[cmd] {
-			t.Fatalf("did not run backend %q", cmd)
-		}
-	}
-
-	payload := parseIntegrationOutput(t, out)
-	if payload.Summary.Total != 4 || payload.Summary.Failed != 0 || payload.Summary.Success != 4 {
-		t.Fatalf("unexpected summary: %+v (out=%q)", payload.Summary, out)
-	}
-}
-
-func TestRunParallel_AllBackends_ResumeMode(t *testing.T) {
-	defer resetTestHooks()
-	t.Setenv("CODEX_BYPASS_SANDBOX", "false")
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("USERPROFILE", home)
-	t.Setenv("FISH_AGENT_WRAPPER_CLAUDE_DIR", t.TempDir())
-
-	os.Args = []string{"fish-agent-wrapper", "--parallel", "--backend", "codex"}
-	stdinReader = bytes.NewReader([]byte(
-		`---TASK---
-id: codex
-backend: codex
-session_id: tid_codex
----CONTENT---
-resume-codex
----TASK---
-id: claude
-backend: claude
-session_id: sid_claude
----CONTENT---
-resume-claude
----TASK---
-id: gemini
-backend: gemini
-session_id: sid_gemini
----CONTENT---
-resume-gemini
----TASK---
-id: amp
-backend: ampcode
-session_id: T-amp-resume
----CONTENT---
-resume-amp
-`,
-	))
-
-	var (
-		mu      sync.Mutex
-		runErr  error
-		seenCmd = make(map[string]bool)
-	)
-
-	newCommandRunner = func(ctx context.Context, name string, args ...string) commandRunner {
-		joined := " " + strings.Join(args, " ") + " "
-		mu.Lock()
-		defer mu.Unlock()
-		if runErr != nil {
-			return newFakeCmd(fakeCmdConfig{})
-		}
-		seenCmd[name] = true
-		switch name {
-		case "codex":
-			if !strings.Contains(joined, " resume tid_codex ") {
-				runErr = fmt.Errorf("codex resume missing tid_codex: %v", args)
-			}
-			out := `{"type":"thread.started","thread_id":"tid_codex"}` + "\n" +
-				`{"type":"item.completed","item":{"type":"agent_message","text":"OK"}}` + "\n"
-			return newFakeCmd(fakeCmdConfig{StdoutPlan: []fakeStdoutEvent{{Data: out}}})
-		case "claude":
-			if !strings.Contains(joined, " -r sid_claude ") {
-				runErr = fmt.Errorf("claude resume missing -r sid_claude: %v", args)
-			}
-			out := `{"type":"result","session_id":"sid_claude","result":"OK"}` + "\n"
-			return newFakeCmd(fakeCmdConfig{StdoutPlan: []fakeStdoutEvent{{Data: out}}})
-		case "gemini":
-			if !strings.Contains(joined, " -r sid_gemini ") {
-				runErr = fmt.Errorf("gemini resume missing -r sid_gemini: %v", args)
-			}
-			out := `{"type":"result","session_id":"sid_gemini","status":"success","content":"OK"}` + "\n"
-			return newFakeCmd(fakeCmdConfig{StdoutPlan: []fakeStdoutEvent{{Data: out}}})
-		case "amp":
-			if !strings.Contains(joined, " threads continue T-amp-resume ") {
-				runErr = fmt.Errorf("ampcode resume missing threads continue T-amp-resume: %v", args)
-			}
-			out := `{"type":"assistant","session_id":"T-amp-resume","message":{"content":[{"type":"text","text":"OK"}]}}` + "\n" +
-				`{"type":"done","session_id":"T-amp-resume"}` + "\n"
-			return newFakeCmd(fakeCmdConfig{StdoutPlan: []fakeStdoutEvent{{Data: out}}})
-		default:
-			runErr = fmt.Errorf("unexpected command: %s (args=%v)", name, args)
-			return newFakeCmd(fakeCmdConfig{})
-		}
-	}
-
-	var exitCode int
-	out := captureOutput(t, func() { exitCode = run() })
-
-	if exitCode != 0 {
-		t.Fatalf("run() exit=%d, want 0 (out=%q)", exitCode, out)
-	}
-	if runErr != nil {
-		t.Fatalf("runner error: %v", runErr)
-	}
-	for _, cmd := range []string{"codex", "claude", "gemini", "amp"} {
-		if !seenCmd[cmd] {
-			t.Fatalf("did not run backend %q", cmd)
-		}
-	}
-
-	payload := parseIntegrationOutput(t, out)
-	if payload.Summary.Total != 4 || payload.Summary.Failed != 0 || payload.Summary.Success != 4 {
-		t.Fatalf("unexpected summary: %+v (out=%q)", payload.Summary, out)
 	}
 }
