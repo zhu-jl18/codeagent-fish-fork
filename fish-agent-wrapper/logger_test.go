@@ -586,7 +586,7 @@ func TestLoggerCoverageSuite(t *testing.T) {
 		{"TestGetBootTimeInvalidData", TestGetBootTimeInvalidData},
 
 		{"TestClaudeBuildArgs_ModesAndPermissions", TestClaudeBuildArgs_ModesAndPermissions},
-		{"TestClaudeBuildArgs_GeminiAndCodexModes", TestClaudeBuildArgs_GeminiAndCodexModes},
+		{"TestVariousBackendsBuildArgs", TestVariousBackendsBuildArgs},
 		{"TestClaudeBuildArgs_BackendMetadata", TestClaudeBuildArgs_BackendMetadata},
 	}
 

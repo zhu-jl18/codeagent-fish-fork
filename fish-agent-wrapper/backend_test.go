@@ -66,7 +66,7 @@ func TestClaudeBuildArgs_ModesAndPermissions(t *testing.T) {
 	})
 }
 
-func TestClaudeBuildArgs_GeminiAndCodexModes(t *testing.T) {
+func TestVariousBackendsBuildArgs(t *testing.T) {
 	t.Run("gemini new mode defaults workdir", func(t *testing.T) {
 		backend := GeminiBackend{}
 		cfg := &Config{Mode: "new", WorkDir: "/workspace"}
