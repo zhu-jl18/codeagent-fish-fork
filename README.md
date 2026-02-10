@@ -34,8 +34,10 @@ python3 install.py --skip-wrapper
 - `~/.fish-agent-wrapper/bin/fish-agent-wrapper`（Windows 上是 `.exe`）
 
 不会自动做的事（必须手动）：
-- 不会自动复制 `skills/` / `dev-workflow/commands` / `dev-workflow/agents`
-- 请按你的目标 CLI（Claude/Codex/iFlow/Amp）手动复制到对应 root 或 project scope
+- 不会自动复制 `skills/` / `dev-workflow/commands` / `dev-workflow/agents` 到你的目标 CLI root 或 project scope
+- 需要按你的目标 CLI 自行手动复制：
+  - **Skills**：从本仓库 `skills/*` 里挑需要的（例如 `skills/dev`、`skills/fish-agent-wrapper`）
+  - **/dev command（Claude Code 等）**：使用 `dev-workflow/commands/dev.md` 与 `dev-workflow/agents/*`
 
 提示：
 - 在 WSL 里运行 `install.py` 会安装 Linux wrapper；在 macOS（Apple Silicon）里运行会安装 Darwin arm64 wrapper；在 Windows 里运行会安装 Windows `.exe`。

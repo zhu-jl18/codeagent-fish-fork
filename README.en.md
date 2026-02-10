@@ -31,8 +31,10 @@ Installer outputs:
 - `~/.fish-agent-wrapper/bin/fish-agent-wrapper` (or `.exe` on Windows)
 
 Not automated (manual by design):
-- No auto-copy for `skills/`, `dev-workflow/commands`, or `dev-workflow/agents`
-- Manually copy markdown assets into each target CLI root/project scope (Claude/Codex/iFlow/Amp)
+- No auto-copy of `skills/`, `dev-workflow/commands`, or `dev-workflow/agents` into your target CLI root/project scope
+- Manually copy what you need based on your target CLI:
+  - **Skills**: pick from `skills/*` (for example: `skills/dev`, `skills/fish-agent-wrapper`)
+  - **/dev command (Claude Code, etc.)**: use `dev-workflow/commands/dev.md` and `dev-workflow/agents/*`
 
 ## Maintain (Rebuild Dist Binaries)
 
