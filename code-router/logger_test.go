@@ -36,7 +36,7 @@ func TestLoggerCreatesFileWithPID(t *testing.T) {
 	}
 	defer logger.Close()
 
-	expectedPath := filepath.Join(tempDir, fmt.Sprintf("fish-agent-wrapper-%d.log", os.Getpid()))
+	expectedPath := filepath.Join(tempDir, fmt.Sprintf("code-router-%d.log", os.Getpid()))
 	if logger.Path() != expectedPath {
 		t.Fatalf("logger path = %s, want %s", logger.Path(), expectedPath)
 	}
@@ -234,10 +234,10 @@ func TestLoggerTerminateProcessNil(t *testing.T) {
 func TestLoggerCleanupOldLogsRemovesOrphans(t *testing.T) {
 	tempDir := setTempDirEnv(t, t.TempDir())
 
-	orphan1 := createTempLog(t, tempDir, "fish-agent-wrapper-111.log")
-	orphan2 := createTempLog(t, tempDir, "fish-agent-wrapper-222-suffix.log")
-	running1 := createTempLog(t, tempDir, "fish-agent-wrapper-333.log")
-	running2 := createTempLog(t, tempDir, "fish-agent-wrapper-444-extra-info.log")
+	orphan1 := createTempLog(t, tempDir, "code-router-111.log")
+	orphan2 := createTempLog(t, tempDir, "code-router-222-suffix.log")
+	running1 := createTempLog(t, tempDir, "code-router-333.log")
+	running2 := createTempLog(t, tempDir, "code-router-444-extra-info.log")
 	untouched := createTempLog(t, tempDir, "unrelated.log")
 
 	runningPIDs := map[int]bool{333: true, 444: true}
@@ -285,15 +285,15 @@ func TestLoggerCleanupOldLogsHandlesInvalidNamesAndErrors(t *testing.T) {
 	tempDir := setTempDirEnv(t, t.TempDir())
 
 	invalid := []string{
-		"fish-agent-wrapper-.log",
-		"fish-agent-wrapper.log",
-		"fish-agent-wrapper-foo-bar.txt",
+		"code-router-.log",
+		"code-router.log",
+		"code-router-foo-bar.txt",
 		"not-a-codex.log",
 	}
 	for _, name := range invalid {
 		createTempLog(t, tempDir, name)
 	}
-	target := createTempLog(t, tempDir, "fish-agent-wrapper-555-extra.log")
+	target := createTempLog(t, tempDir, "code-router-555-extra.log")
 
 	var checked []int
 	stubProcessRunning(t, func(pid int) bool {
@@ -389,8 +389,8 @@ func TestLoggerCleanupOldLogsHandlesTempDirPermissionErrors(t *testing.T) {
 	tempDir := setTempDirEnv(t, t.TempDir())
 
 	paths := []string{
-		createTempLog(t, tempDir, "fish-agent-wrapper-6100.log"),
-		createTempLog(t, tempDir, "fish-agent-wrapper-6101.log"),
+		createTempLog(t, tempDir, "code-router-6100.log"),
+		createTempLog(t, tempDir, "code-router-6101.log"),
 	}
 
 	stubProcessRunning(t, func(int) bool { return false })
@@ -428,8 +428,8 @@ func TestLoggerCleanupOldLogsHandlesTempDirPermissionErrors(t *testing.T) {
 func TestLoggerCleanupOldLogsHandlesPermissionDeniedFile(t *testing.T) {
 	tempDir := setTempDirEnv(t, t.TempDir())
 
-	protected := createTempLog(t, tempDir, "fish-agent-wrapper-6200.log")
-	deletable := createTempLog(t, tempDir, "fish-agent-wrapper-6201.log")
+	protected := createTempLog(t, tempDir, "code-router-6200.log")
+	deletable := createTempLog(t, tempDir, "code-router-6201.log")
 
 	stubProcessRunning(t, func(int) bool { return false })
 	stubProcessStartTime(t, func(int) time.Time { return time.Time{} })
@@ -468,7 +468,7 @@ func TestLoggerCleanupOldLogsPerformanceBound(t *testing.T) {
 	const fileCount = 400
 	fakePaths := make([]string, fileCount)
 	for i := 0; i < fileCount; i++ {
-		name := fmt.Sprintf("fish-agent-wrapper-%d.log", 10000+i)
+		name := fmt.Sprintf("code-router-%d.log", 10000+i)
 		fakePaths[i] = createTempLog(t, tempDir, name)
 	}
 
@@ -599,7 +599,7 @@ func TestLoggerCleanupOldLogsKeepsCurrentProcessLog(t *testing.T) {
 	tempDir := setTempDirEnv(t, t.TempDir())
 
 	currentPID := os.Getpid()
-	currentLog := createTempLog(t, tempDir, fmt.Sprintf("fish-agent-wrapper-%d.log", currentPID))
+	currentLog := createTempLog(t, tempDir, fmt.Sprintf("code-router-%d.log", currentPID))
 
 	stubProcessRunning(t, func(pid int) bool {
 		if pid != currentPID {
@@ -675,7 +675,7 @@ func TestLoggerIsUnsafeFileSecurityChecks(t *testing.T) {
 		stubEvalSymlinks(t, func(path string) (string, error) {
 			return filepath.Join(absTempDir, filepath.Base(path)), nil
 		})
-		unsafe, reason := isUnsafeFile(filepath.Join(absTempDir, "fish-agent-wrapper-1.log"), tempDir)
+		unsafe, reason := isUnsafeFile(filepath.Join(absTempDir, "code-router-1.log"), tempDir)
 		if !unsafe || reason != "refusing to delete symlink" {
 			t.Fatalf("expected symlink to be rejected, got unsafe=%v reason=%q", unsafe, reason)
 		}
@@ -701,9 +701,9 @@ func TestLoggerIsUnsafeFileSecurityChecks(t *testing.T) {
 		})
 		otherDir := t.TempDir()
 		stubEvalSymlinks(t, func(string) (string, error) {
-			return filepath.Join(otherDir, "fish-agent-wrapper-9.log"), nil
+			return filepath.Join(otherDir, "code-router-9.log"), nil
 		})
-		unsafe, reason := isUnsafeFile(filepath.Join(otherDir, "fish-agent-wrapper-9.log"), tempDir)
+		unsafe, reason := isUnsafeFile(filepath.Join(otherDir, "code-router-9.log"), tempDir)
 		if !unsafe || reason != "file is outside tempDir" {
 			t.Fatalf("expected outside file to be rejected, got unsafe=%v reason=%q", unsafe, reason)
 		}
@@ -781,13 +781,13 @@ func TestLoggerParsePIDFromLog(t *testing.T) {
 		pid  int
 		ok   bool
 	}{
-		{"fish-agent-wrapper-123.log", 123, true},
-		{"fish-agent-wrapper-999-extra.log", 999, true},
-		{"fish-agent-wrapper-.log", 0, false},
+		{"code-router-123.log", 123, true},
+		{"code-router-999-extra.log", 999, true},
+		{"code-router-.log", 0, false},
 		{"invalid-name.log", 0, false},
-		{"fish-agent-wrapper--5.log", 0, false},
-		{"fish-agent-wrapper-0.log", 0, false},
-		{fmt.Sprintf("fish-agent-wrapper-%s.log", hugePID), 0, false},
+		{"code-router--5.log", 0, false},
+		{"code-router-0.log", 0, false},
+		{fmt.Sprintf("code-router-%s.log", hugePID), 0, false},
 	}
 
 	for _, tt := range tests {

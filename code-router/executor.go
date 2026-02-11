@@ -536,7 +536,7 @@ func shouldSkipTask(task TaskSpec, failed map[string]TaskResult) (bool, string) 
 
 // getStatusSymbols returns status symbols based on ASCII mode.
 func getStatusSymbols() (success, warning, failed string) {
-	if parseBoolFlag(getEnv("FISH_AGENT_WRAPPER_ASCII_MODE", ""), false) {
+	if parseBoolFlag(getEnv("CODE_ROUTER_ASCII_MODE", ""), false) {
 		return "PASS", "WARN", "FAIL"
 	}
 	return "✓", "⚠️", "✗"

@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	defaultWrapperName = "fish-agent-wrapper"
+	defaultWrapperName = "code-router"
 )
 
 var executablePathFn = os.Executable

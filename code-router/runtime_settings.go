@@ -21,7 +21,7 @@ func resolveWrapperHomeDir() string {
 	if err != nil || strings.TrimSpace(home) == "" {
 		return ""
 	}
-	return filepath.Join(home, ".fish-agent-wrapper")
+	return filepath.Join(home, ".code-router")
 }
 
 func resolveWrapperEnvFile() string {
@@ -154,7 +154,7 @@ func runtimeInjectedEnv() map[string]string {
 }
 
 func isWrapperControlKey(key string) bool {
-	if strings.HasPrefix(key, "FISH_AGENT_WRAPPER_") {
+	if strings.HasPrefix(key, "CODE_ROUTER_") {
 		return true
 	}
 	switch key {

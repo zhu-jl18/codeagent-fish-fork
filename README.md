@@ -1,4 +1,4 @@
-# fish-agent-wrapper
+# code-router
 
 <p align="center">
   <strong>中文</strong> | <a href="README.en.md">English</a>
@@ -8,7 +8,7 @@
 
 你会得到什么（Key Concepts）：
 - `/dev` 工作流：需求澄清 → 计划 → 并行执行 → 验证
-- `fish-agent-wrapper`：Go 写的执行器；统一 3 个后端 `codex/claude/gemini`；核心机制 `--parallel`
+- `code-router`：Go 写的执行器；统一 3 个后端 `codex/claude/gemini`；核心机制 `--parallel`
 - `product-requirements` skill：PRD 生成
 
 你不会得到什么：
@@ -24,19 +24,19 @@ python3 install.py
 
 可选参数：
 ```bash
-python3 install.py --install-dir ~/.fish-agent-wrapper --force
+python3 install.py --install-dir ~/.code-router --force
 python3 install.py --skip-wrapper
 ```
 
 安装器会做这些事：
-- `~/.fish-agent-wrapper/.env`：运行时唯一配置源
-- `~/.fish-agent-wrapper/prompts/*-prompt.md`：每个后端一个空占位文件（用于 prompt 注入）
-- `~/.fish-agent-wrapper/bin/fish-agent-wrapper`（Windows 上是 `.exe`）
+- `~/.code-router/.env`：运行时唯一配置源
+- `~/.code-router/prompts/*-prompt.md`：每个后端一个空占位文件（用于 prompt 注入）
+- `~/.code-router/bin/code-router`（Windows 上是 `.exe`）
 
 不会自动做的事（必须手动）：
 - 不会自动复制 `skills/` / `dev-workflow/commands` / `dev-workflow/agents` 到你的目标 CLI root 或 project scope
 - 需要按你的目标 CLI 自行手动复制：
-  - **Skills**：从本仓库 `skills/*` 里挑需要的（例如 `skills/dev`、`skills/fish-agent-wrapper`）
+  - **Skills**：从本仓库 `skills/*` 里挑需要的（例如 `skills/dev`、`skills/code-router`）
   - **/dev command（Claude Code 等）**：使用 `dev-workflow/commands/dev.md` 与 `dev-workflow/agents/*`
 
 提示：
@@ -49,16 +49,16 @@ bash scripts/build-dist.sh
 ```
 
 产物：
-- `dist/fish-agent-wrapper-linux-amd64`
-- `dist/fish-agent-wrapper-darwin-arm64`
-- `dist/fish-agent-wrapper-windows-amd64.exe`
+- `dist/code-router-linux-amd64`
+- `dist/code-router-darwin-arm64`
+- `dist/code-router-windows-amd64.exe`
 
 ## Prompt 注入（默认开启；空文件 = 等价不注入）
 
 默认占位文件（每个后端一个）：
-- `~/.fish-agent-wrapper/prompts/codex-prompt.md`
-- `~/.fish-agent-wrapper/prompts/claude-prompt.md`
-- `~/.fish-agent-wrapper/prompts/gemini-prompt.md`
+- `~/.code-router/prompts/codex-prompt.md`
+- `~/.code-router/prompts/claude-prompt.md`
+- `~/.code-router/prompts/gemini-prompt.md`
 
 规则：
 - wrapper 会读取对应后端的 prompt 文件；只有在内容非空时才会 prepend 到任务前面
@@ -82,6 +82,6 @@ PRD：
 ## 开发/测试
 
 ```bash
-cd fish-agent-wrapper
+cd code-router
 go test ./...
 ```

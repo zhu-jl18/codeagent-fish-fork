@@ -199,7 +199,7 @@ func (l *Logger) Error(msg string) { l.log("ERROR", msg) }
 // Close signals the worker to flush and close the log file.
 // The log file is NOT removed, allowing inspection after program exit.
 // It is safe to call multiple times.
-// Waits up to FISH_AGENT_WRAPPER_LOGGER_CLOSE_TIMEOUT_MS (default: 5000) for shutdown; set to 0 to wait indefinitely.
+// Waits up to CODE_ROUTER_LOGGER_CLOSE_TIMEOUT_MS (default: 5000) for shutdown; set to 0 to wait indefinitely.
 // Returns an error if shutdown doesn't complete within the timeout.
 func (l *Logger) Close() error {
 	if l == nil {
@@ -242,7 +242,7 @@ func (l *Logger) Close() error {
 func loggerCloseTimeout() time.Duration {
 	const defaultTimeout = 5 * time.Second
 
-	raw := strings.TrimSpace(getEnv("FISH_AGENT_WRAPPER_LOGGER_CLOSE_TIMEOUT_MS", ""))
+	raw := strings.TrimSpace(getEnv("CODE_ROUTER_LOGGER_CLOSE_TIMEOUT_MS", ""))
 	if raw == "" {
 		return defaultTimeout
 	}

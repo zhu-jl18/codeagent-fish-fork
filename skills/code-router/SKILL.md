@@ -1,17 +1,17 @@
 ---
-name: fish-agent-wrapper
-description: Execute fish-agent-wrapper for multi-backend AI code tasks. Supports Codex, Claude, Gemini, with file references (@syntax) and structured output.
+name: code-router
+description: Execute code-router for multi-backend AI code tasks. Supports Codex, Claude, Gemini, with file references (@syntax) and structured output.
 ---
 
-# fish-agent-wrapper Integration
+# code-router Integration
 
 ## Overview
 
-Execute fish-agent-wrapper commands with pluggable AI backends(Codex, Claude, Gemini). Supports file references via `@` syntax, parallel task execution with backend selection, and configurable security controls.
+Execute code-router commands with pluggable AI backends(Codex, Claude, Gemini). Supports file references via `@` syntax, parallel task execution with backend selection, and configurable security controls.
 
 ## When to Use
 
-When the user explicitly requests a specific backend (Codex, Claude, or Gemini), mentions fish-agent-wrapper, or when a skill or command definition explicitly declares a dependency on this skill.
+When the user explicitly requests a specific backend (Codex, Claude, or Gemini), mentions code-router, or when a skill or command definition explicitly declares a dependency on this skill.
 
 Applicable scenarios include but are not limited to:
 - Complex code analysis requiring deep understanding
@@ -23,26 +23,26 @@ Applicable scenarios include but are not limited to:
 
 **1) Standard invocation: HEREDOC syntax (recommended)**
 ```bash
-fish-agent-wrapper --backend codex - [working_dir] <<'EOF'
+code-router --backend codex - [working_dir] <<'EOF'
 <task content here>
 EOF
 ```
 
 **2) Single-line tasks (no heredoc)**
 ```bash
-fish-agent-wrapper --backend codex "simple task" [working_dir]
-fish-agent-wrapper --backend claude "simple task" [working_dir]
-fish-agent-wrapper --backend gemini "simple task" [working_dir]
+code-router --backend codex "simple task" [working_dir]
+code-router --backend claude "simple task" [working_dir]
+code-router --backend gemini "simple task" [working_dir]
 ```
 
 ## Common Parameters
 
 - Command notation and positional order
   - `[]` means optional. Do not type brackets literally.
-  - Inline task: `fish-agent-wrapper --backend <backend> "<task>" [working_dir]` — task text is passed in command args; best for short one-line prompts.
-  - Stdin task: `fish-agent-wrapper --backend <backend> - [working_dir]` — task text is read from stdin (`<<'EOF'`/pipe); best for multi-line or complex content.
+  - Inline task: `code-router --backend <backend> "<task>" [working_dir]` — task text is passed in command args; best for short one-line prompts.
+  - Stdin task: `code-router --backend <backend> - [working_dir]` — task text is read from stdin (`<<'EOF'`/pipe); best for multi-line or complex content.
   - These two forms are for new-task commands only.
-  - Resume uses its own forms: inline `fish-agent-wrapper --backend <backend> resume <session_id> "<follow-up task>"` and stdin `fish-agent-wrapper --backend <backend> resume <session_id> -`.
+  - Resume uses its own forms: inline `code-router --backend <backend> resume <session_id> "<follow-up task>"` and stdin `code-router --backend <backend> resume <session_id> -`.
 
 - `--backend <backend>` (required)
   - Select backend explicitly: `codex | claude | gemini`.
@@ -119,19 +119,19 @@ Supported backends all support resume mode: `codex | claude | gemini`.
 
 **1) Standard resume (HEREDOC)**
 ```bash
-fish-agent-wrapper --backend codex resume <session_id> - <<'EOF'
+code-router --backend codex resume <session_id> - <<'EOF'
 <follow-up task>
 EOF
 ```
 
 **2) Single-line resume (no heredoc)**
 ```bash
-fish-agent-wrapper --backend claude resume <session_id> "follow-up task"
+code-router --backend claude resume <session_id> "follow-up task"
 ```
 
 **3) Parallel resume (supported)**
 ```bash
-fish-agent-wrapper --parallel --backend codex <<'EOF'
+code-router --parallel --backend codex <<'EOF'
 ---TASK---
 id: resume-a
 backend: claude
@@ -150,7 +150,7 @@ Resume mode relies on backend session context.
 
  Resume identifier contract:
 - Use the wrapper-returned `SESSION_ID` as the source of truth for follow-up resume commands.
-- Standard form: `fish-agent-wrapper --backend <backend> resume <SESSION_ID> ...`.
+- Standard form: `code-router --backend <backend> resume <SESSION_ID> ...`.
 
 
 ## Parallel Execution
@@ -176,7 +176,7 @@ layer 2:      task3
 
 **1) Dependency scheduling (global backend fallback)**
 ```bash
-fish-agent-wrapper --parallel --backend codex <<'EOF'
+code-router --parallel --backend codex <<'EOF'
 ---TASK---
 id: task1
 workdir: /path/to/dir
@@ -192,7 +192,7 @@ EOF
 
 **2) Per-task backend override (mixed backends)**
 ```bash
-fish-agent-wrapper --parallel --backend codex <<'EOF'
+code-router --parallel --backend codex <<'EOF'
 ---TASK---
 id: task1
 ---CONTENT---
@@ -214,7 +214,7 @@ EOF
 
 **3) Minimal mixed-backend example (annotated)**
 ```bash
-fish-agent-wrapper --parallel --backend codex <<'EOF'
+code-router --parallel --backend codex <<'EOF'
 ---TASK---
 id: prep
 # uses global backend codex
@@ -235,7 +235,7 @@ In parallel mode, output has two styles:
 
 **1) Summary mode (default, no flag)**
 ```bash
-fish-agent-wrapper --parallel --backend codex <<'EOF'
+code-router --parallel --backend codex <<'EOF'
 ---TASK---
 id: t1
 ---CONTENT---
@@ -245,7 +245,7 @@ EOF
 
 **2) Full mode (`--full-output`)**, mainly for debugging failures or when full per-task messages are required.
 ```bash
-fish-agent-wrapper --parallel --backend codex --full-output <<'EOF'
+code-router --parallel --backend codex --full-output <<'EOF'
 ---TASK---
 id: t1
 ---CONTENT---
@@ -271,7 +271,7 @@ Invocation Pattern:
 ```
 Host-agnostic tool-call template (field names vary by runtime):
 - command payload (`command` or `cmd`):
-  fish-agent-wrapper --backend <backend> - [working_dir] <<'EOF'
+  code-router --backend <backend> - [working_dir] <<'EOF'
   <task content>
   EOF
 - timeout field (`timeout` / `timeout_ms` / equivalent): choose by tier (`600000` / `1800000` / `7200000`)
@@ -287,7 +287,7 @@ Note: `--backend` is required; supported values: `codex | claude | gemini`
 ```
 Host-agnostic tool-call template (field names vary by runtime):
 - command payload (`command` or `cmd`):
-  fish-agent-wrapper --parallel --backend <backend> <<'EOF'
+  code-router --parallel --backend <backend> <<'EOF'
   ---TASK---
   id: task_id
   backend: <backend>  # Optional, overrides global
@@ -307,7 +307,7 @@ Note: Global --backend is required; per-task backend is optional
 
 ## Critical Rules
 
-**NEVER kill fish-agent-wrapper processes by default.** Long-running tasks are normal. Instead:
+**NEVER kill code-router processes by default.** Long-running tasks are normal. Instead:
 
 1. **Check task status via log file**:
    ```bash
@@ -335,10 +335,10 @@ Note: Global --backend is required; per-task backend is optional
 
 3. **Check process without killing**:
    ```bash
-   ps aux | grep fish-agent-wrapper | grep -v grep
+   ps aux | grep code-router | grep -v grep
    ```
 
-**Why:** fish-agent-wrapper tasks often take 5-120 minutes. Killing them wastes API costs and loses progress.
+**Why:** code-router tasks often take 5-120 minutes. Killing them wastes API costs and loses progress.
 
 ## Emergency Stop (User-Requested Only)
 
@@ -350,23 +350,23 @@ Note: Global --backend is required; per-task backend is optional
 1. **Graceful stop wrapper first**:
    ```bash
    # Inspect running wrapper processes
-   pgrep -fa fish-agent-wrapper
+   pgrep -fa code-router
 
    # Soft interrupt first
-   pkill -INT -f '(^|/)fish-agent-wrapper( |$)'
+   pkill -INT -f '(^|/)code-router( |$)'
    ```
 
 2. **Escalate only if still running**:
    ```bash
-   pkill -TERM -f '(^|/)fish-agent-wrapper( |$)'
+   pkill -TERM -f '(^|/)code-router( |$)'
    sleep 2
-   pkill -KILL -f '(^|/)fish-agent-wrapper( |$)'
+   pkill -KILL -f '(^|/)code-router( |$)'
    ```
 
 3. **Cleanup only descendants of the target wrapper PID (safe default)**:
    ```bash
    # Pick target wrapper PID first (example: newest one)
-   WRAPPER_PID=$(pgrep -n -f '(^|/)fish-agent-wrapper( |$)')
+   WRAPPER_PID=$(pgrep -n -f '(^|/)code-router( |$)')
 
    # TERM direct children of this wrapper only
    pkill -TERM -P "$WRAPPER_PID" 2>/dev/null || true
@@ -378,6 +378,6 @@ Note: Global --backend is required; per-task backend is optional
 
 4. **Post-check**:
    ```bash
-   pgrep -fa fish-agent-wrapper
+   pgrep -fa code-router
    pgrep -fa 'codex|claude|gemini'
    ```

@@ -9,7 +9,7 @@ func TestClaudeBuildArgs_ModesAndPermissions(t *testing.T) {
 	backend := ClaudeBackend{}
 
 	t.Run("new mode omits skip-permissions when env disabled", func(t *testing.T) {
-		setRuntimeSettingsForTest(map[string]string{"FISH_AGENT_WRAPPER_SKIP_PERMISSIONS": "false"})
+		setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_SKIP_PERMISSIONS": "false"})
 		t.Cleanup(resetRuntimeSettingsForTest)
 		cfg := &Config{Mode: "new", WorkDir: "/repo"}
 		got := backend.BuildArgs(cfg, "todo")
@@ -29,7 +29,7 @@ func TestClaudeBuildArgs_ModesAndPermissions(t *testing.T) {
 	})
 
 	t.Run("resume mode includes session id", func(t *testing.T) {
-		setRuntimeSettingsForTest(map[string]string{"FISH_AGENT_WRAPPER_SKIP_PERMISSIONS": "false"})
+		setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_SKIP_PERMISSIONS": "false"})
 		t.Cleanup(resetRuntimeSettingsForTest)
 		cfg := &Config{Mode: "resume", SessionID: "sid-123", WorkDir: "/ignored"}
 		got := backend.BuildArgs(cfg, "resume-task")
@@ -40,7 +40,7 @@ func TestClaudeBuildArgs_ModesAndPermissions(t *testing.T) {
 	})
 
 	t.Run("resume mode without session still returns base flags", func(t *testing.T) {
-		setRuntimeSettingsForTest(map[string]string{"FISH_AGENT_WRAPPER_SKIP_PERMISSIONS": "false"})
+		setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_SKIP_PERMISSIONS": "false"})
 		t.Cleanup(resetRuntimeSettingsForTest)
 		cfg := &Config{Mode: "resume", WorkDir: "/ignored"}
 		got := backend.BuildArgs(cfg, "follow-up")
@@ -173,7 +173,7 @@ func TestRuntimeEnvForBackend(t *testing.T) {
 
 	t.Run("filters wrapper control keys", func(t *testing.T) {
 		setRuntimeSettingsForTest(map[string]string{
-			"FISH_AGENT_WRAPPER_SKIP_PERMISSIONS": "false",
+			"CODE_ROUTER_SKIP_PERMISSIONS": "false",
 			"CODEX_TIMEOUT":                        "7200000",
 			"ANTHROPIC_API_KEY":                    "secret",
 			"FOO":                                  "bar",
@@ -187,8 +187,8 @@ func TestRuntimeEnvForBackend(t *testing.T) {
 		if _, ok := got["CODEX_TIMEOUT"]; ok {
 			t.Fatalf("got %v, control key CODEX_TIMEOUT should be filtered", got)
 		}
-		if _, ok := got["FISH_AGENT_WRAPPER_SKIP_PERMISSIONS"]; ok {
-			t.Fatalf("got %v, control key FISH_AGENT_WRAPPER_SKIP_PERMISSIONS should be filtered", got)
+		if _, ok := got["CODE_ROUTER_SKIP_PERMISSIONS"]; ok {
+			t.Fatalf("got %v, control key CODE_ROUTER_SKIP_PERMISSIONS should be filtered", got)
 		}
 	})
 

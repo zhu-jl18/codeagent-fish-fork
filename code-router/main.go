@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	version               = "5.6.4"
+	version               = "1.0.0"
 	defaultWorkdir        = "."
 	defaultTimeout        = 7200 // seconds (2 hours)
 	defaultCoverageTarget = 90.0
@@ -178,7 +178,7 @@ func run() (exitCode int) {
 			backendName := ""
 			backendSpecified := false
 			fullOutput := false
-			skipPermissions := envFlagEnabled("FISH_AGENT_WRAPPER_SKIP_PERMISSIONS")
+			skipPermissions := envFlagEnabled("CODE_ROUTER_SKIP_PERMISSIONS")
 			var extras []string
 
 			for i := 0; i < len(args); i++ {
@@ -609,15 +609,15 @@ Parallel mode examples:
 	%[1]s --parallel --backend gemini --full-output < tasks.txt
 
 		Prompt Injection (default-on):
-			Prompt file path: ~/.fish-agent-wrapper/prompts/<backend>-prompt.md
+			Prompt file path: ~/.code-router/prompts/<backend>-prompt.md
 		    Backends: codex | claude | gemini
 		    Empty/missing prompt files behave like no injection.
 
 	Runtime Config:
-	    ~/.fish-agent-wrapper/.env (single source of truth)
+	    ~/.code-router/.env (single source of truth)
 	    Supported keys include: CODEX_TIMEOUT, CODEX_BYPASS_SANDBOX,
-	    FISH_AGENT_WRAPPER_SKIP_PERMISSIONS, FISH_AGENT_WRAPPER_ASCII_MODE,
-	    FISH_AGENT_WRAPPER_MAX_PARALLEL_WORKERS, FISH_AGENT_WRAPPER_LOGGER_CLOSE_TIMEOUT_MS
+	    CODE_ROUTER_SKIP_PERMISSIONS, CODE_ROUTER_ASCII_MODE,
+	    CODE_ROUTER_MAX_PARALLEL_WORKERS, CODE_ROUTER_LOGGER_CLOSE_TIMEOUT_MS
 
 Exit Codes:
     0    Success

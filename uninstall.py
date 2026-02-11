@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Uninstaller for fish-agent-wrapper runtime assets.
+"""Uninstaller for code-router runtime assets.
 
 Removes only the files installed by ./install.py and leaves unrelated user files intact.
 """
@@ -11,16 +11,16 @@ import os
 from pathlib import Path
 
 
-DEFAULT_INSTALL_DIR = "~/.fish-agent-wrapper"
+DEFAULT_INSTALL_DIR = "~/.code-router"
 BACKENDS = ("codex", "claude", "gemini")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Uninstall fish-agent-wrapper")
+    p = argparse.ArgumentParser(description="Uninstall code-router")
     p.add_argument(
         "--install-dir",
         default=DEFAULT_INSTALL_DIR,
-        help="Install directory (default: ~/.fish-agent-wrapper)",
+        help="Install directory (default: ~/.code-router)",
     )
     p.add_argument(
         "-y",
@@ -58,13 +58,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if not args.yes:
-        print(f"About to remove fish-agent-wrapper installed files from: {install_dir}")
+        print(f"About to remove code-router installed files from: {install_dir}")
         print("Proceed? [y/N] ", end="", flush=True)
         if input().strip().lower() not in ("y", "yes"):
             print("Aborted.")
             return 0
 
-    exe_name = "fish-agent-wrapper.exe" if os.name == "nt" else "fish-agent-wrapper"
+    exe_name = "code-router.exe" if os.name == "nt" else "code-router"
 
     targets = [
         install_dir / ".env",

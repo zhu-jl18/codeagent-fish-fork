@@ -1,4 +1,4 @@
-# fish-agent-wrapper Runtime Config
+# code-router Runtime Config
 
 This document is the single source of truth for runtime behavior related to:
 
@@ -12,7 +12,7 @@ This document is the single source of truth for runtime behavior related to:
 All runtime options are loaded from:
 
 ```text
-~/.fish-agent-wrapper/.env
+~/.code-router/.env
 ```
 
 The wrapper does not read these control options from shell environment variables anymore.
@@ -22,7 +22,7 @@ The wrapper does not read these control options from shell environment variables
 | Backend | Wrapper-added flag | Default behavior | Disable/Change path |
 |---|---|---|---|
 | `codex` | `--dangerously-bypass-approvals-and-sandbox` | enabled by default | set `CODEX_BYPASS_SANDBOX=false` in `.env` |
-| `claude` | `--dangerously-skip-permissions` | enabled by default | set `FISH_AGENT_WRAPPER_SKIP_PERMISSIONS=false` in `.env` |
+| `claude` | `--dangerously-skip-permissions` | enabled by default | set `CODE_ROUTER_SKIP_PERMISSIONS=false` in `.env` |
 | `gemini` | `-y` (`--yolo`) | always enabled in current wrapper | no wrapper toggle currently |
 
 Notes:
@@ -38,7 +38,7 @@ Notes:
   - unset/true => wrapper appends codex dangerous bypass flag
   - false => wrapper does not append codex dangerous bypass flag
 
-- `FISH_AGENT_WRAPPER_SKIP_PERMISSIONS` (claude)
+- `CODE_ROUTER_SKIP_PERMISSIONS` (claude)
   - unset/true => wrapper appends `--dangerously-skip-permissions`
   - false => wrapper keeps permission prompts for claude
 
@@ -50,16 +50,16 @@ Notes:
     - value `>10000` => treated as milliseconds, converted to seconds
     - value `<=10000` => treated as seconds
 
-- `FISH_AGENT_WRAPPER_MAX_PARALLEL_WORKERS`
+- `CODE_ROUTER_MAX_PARALLEL_WORKERS`
   - default: unlimited (`0`)
   - recommended: `8`
   - hard cap in wrapper: `100`
 
-- `FISH_AGENT_WRAPPER_ASCII_MODE`
+- `CODE_ROUTER_ASCII_MODE`
   - `true` => ASCII status (`PASS/WARN/FAIL`)
   - otherwise => Unicode status symbols
 
-- `FISH_AGENT_WRAPPER_LOGGER_CLOSE_TIMEOUT_MS`
+- `CODE_ROUTER_LOGGER_CLOSE_TIMEOUT_MS`
   - default: `5000`
   - `0` => wait indefinitely
 
@@ -68,7 +68,7 @@ Notes:
 Prompt files are resolved from:
 
 ```text
-~/.fish-agent-wrapper/prompts/<backend>-prompt.md
+~/.code-router/prompts/<backend>-prompt.md
 ```
 
 Supported backends: `codex`, `claude`, `gemini`.
@@ -99,5 +99,5 @@ Effective timeout is whichever triggers first.
 Edit the file directly:
 
 ```bash
-${EDITOR:-vi} ~/.fish-agent-wrapper/.env
+${EDITOR:-vi} ~/.code-router/.env
 ```

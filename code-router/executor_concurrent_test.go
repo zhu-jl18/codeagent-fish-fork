@@ -313,7 +313,7 @@ func TestExecutorHelperCoverage(t *testing.T) {
 	})
 
 	t.Run("generateFinalOutputASCIIMode", func(t *testing.T) {
-		setRuntimeSettingsForTest(map[string]string{"FISH_AGENT_WRAPPER_ASCII_MODE": "true"})
+		setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_ASCII_MODE": "true"})
 		t.Cleanup(resetRuntimeSettingsForTest)
 
 		results := []TaskResult{
@@ -336,7 +336,7 @@ func TestExecutorHelperCoverage(t *testing.T) {
 	})
 
 	t.Run("generateFinalOutputUnicodeMode", func(t *testing.T) {
-		setRuntimeSettingsForTest(map[string]string{"FISH_AGENT_WRAPPER_ASCII_MODE": "false"})
+		setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_ASCII_MODE": "false"})
 		t.Cleanup(resetRuntimeSettingsForTest)
 
 		results := []TaskResult{
@@ -359,7 +359,7 @@ func TestExecutorHelperCoverage(t *testing.T) {
 		runCodexTaskFn = func(task TaskSpec, timeout int) TaskResult {
 			return TaskResult{TaskID: task.ID, ExitCode: 0, Message: "done"}
 		}
-		setRuntimeSettingsForTest(map[string]string{"FISH_AGENT_WRAPPER_MAX_PARALLEL_WORKERS": "1"})
+		setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_MAX_PARALLEL_WORKERS": "1"})
 		t.Cleanup(resetRuntimeSettingsForTest)
 
 		results := executeConcurrent([][]TaskSpec{{{ID: "wrap"}}}, 1)
@@ -629,7 +629,7 @@ func TestExecutorRunCodexTaskWithContext(t *testing.T) {
 	})
 
 	t.Run("claudeSkipPermissionsPropagatesFromTaskSpec", func(t *testing.T) {
-		setRuntimeSettingsForTest(map[string]string{"FISH_AGENT_WRAPPER_SKIP_PERMISSIONS": "false"})
+		setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_SKIP_PERMISSIONS": "false"})
 		t.Cleanup(resetRuntimeSettingsForTest)
 		var gotArgs []string
 		newCommandRunner = func(ctx context.Context, name string, args ...string) commandRunner {

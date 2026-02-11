@@ -17,7 +17,7 @@ func createPromptBaseForTest(t *testing.T) string {
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
 
-	promptBase := filepath.Join(home, ".fish-agent-wrapper", "prompts")
+	promptBase := filepath.Join(home, ".code-router", "prompts")
 	if err := os.MkdirAll(promptBase, 0o755); err != nil {
 		t.Fatalf("MkdirAll: %v", err)
 	}
@@ -67,7 +67,7 @@ func TestReadAgentPromptFile_ExplicitTildeExpansion(t *testing.T) {
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	got, err := readAgentPromptFile("~/.fish-agent-wrapper/prompts/prompt.md")
+	got, err := readAgentPromptFile("~/.code-router/prompts/prompt.md")
 	if err != nil {
 		t.Fatalf("readAgentPromptFile error: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestReadAgentPromptFile_RestrictedAllowsClaudeDir(t *testing.T) {
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	got, err := readAgentPromptFile("~/.fish-agent-wrapper/prompts/prompt.md")
+	got, err := readAgentPromptFile("~/.code-router/prompts/prompt.md")
 	if err != nil {
 		t.Fatalf("readAgentPromptFile error: %v", err)
 	}

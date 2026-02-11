@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Installer for fish-agent-wrapper runtime assets.
+"""Installer for code-router runtime assets.
 
 Installs:
-- fish-agent-wrapper binary (copied from prebuilt artifacts in ./dist)
-- per-backend prompt placeholders under ~/.fish-agent-wrapper/prompts
-- ~/.fish-agent-wrapper/.env template for runtime configuration
+- code-router binary (copied from prebuilt artifacts in ./dist)
+- per-backend prompt placeholders under ~/.code-router/prompts
+- ~/.code-router/.env template for runtime configuration
 
 Targets:
 - WSL2/Linux
@@ -23,17 +23,17 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parent
-DEFAULT_INSTALL_DIR = "~/.fish-agent-wrapper"
+DEFAULT_INSTALL_DIR = "~/.code-router"
 
 BACKENDS = ("codex", "claude", "gemini")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Installer for fish-agent-wrapper")
+    p = argparse.ArgumentParser(description="Installer for code-router")
     p.add_argument(
         "--install-dir",
         default=DEFAULT_INSTALL_DIR,
-        help="Install directory (default: ~/.fish-agent-wrapper)",
+        help="Install directory (default: ~/.code-router)",
     )
     p.add_argument(
         "--force",
@@ -44,7 +44,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--skip-wrapper",
         "--skip-build",
         action="store_true",
-        help="Skip installing fish-agent-wrapper binary (only install runtime config/assets)",
+        help="Skip installing code-router binary (only install runtime config/assets)",
     )
     return p.parse_args(argv)
 
@@ -76,16 +76,16 @@ def _install_prompts(install_dir: Path, *, force: bool) -> None:
 
 def _install_env_template(install_dir: Path, *, force: bool) -> None:
     env_template = (
-        "# fish-agent-wrapper runtime config\n"
+        "# code-router runtime config\n"
         "# Values are loaded only from this file.\n\n"
         "# CODEX_TIMEOUT in milliseconds (default: 7200000)\n"
         "CODEX_TIMEOUT=7200000\n\n"
         "# true/false controls\n"
         "CODEX_BYPASS_SANDBOX=true\n"
-        "FISH_AGENT_WRAPPER_SKIP_PERMISSIONS=true\n"
-        "FISH_AGENT_WRAPPER_ASCII_MODE=false\n"
-        "FISH_AGENT_WRAPPER_MAX_PARALLEL_WORKERS=0\n"
-        "FISH_AGENT_WRAPPER_LOGGER_CLOSE_TIMEOUT_MS=5000\n\n"
+        "CODE_ROUTER_SKIP_PERMISSIONS=true\n"
+        "CODE_ROUTER_ASCII_MODE=false\n"
+        "CODE_ROUTER_MAX_PARALLEL_WORKERS=0\n"
+        "CODE_ROUTER_LOGGER_CLOSE_TIMEOUT_MS=5000\n\n"
         "# backend credentials (examples)\n"
         "# ANTHROPIC_API_KEY=\n"
         "# GEMINI_API_KEY=\n"
@@ -97,17 +97,17 @@ def _get_artifact_name() -> str:
     """Get the correct artifact name for the current platform."""
     system = platform.system()
     if system == "Windows":
-        return "fish-agent-wrapper-windows-amd64.exe"
+        return "code-router-windows-amd64.exe"
     elif system == "Darwin":
-        return "fish-agent-wrapper-darwin-arm64"
+        return "code-router-darwin-arm64"
     else:
-        return "fish-agent-wrapper-linux-amd64"
+        return "code-router-linux-amd64"
 
 
 def _copy_prebuilt_wrapper(install_dir: Path, *, force: bool) -> Path:
     bin_dir = install_dir / "bin"
     _ensure_dir(bin_dir)
-    exe_name = "fish-agent-wrapper.exe" if os.name == "nt" else "fish-agent-wrapper"
+    exe_name = "code-router.exe" if os.name == "nt" else "code-router"
     out = bin_dir / exe_name
 
     artifact_name = _get_artifact_name()
