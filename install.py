@@ -25,7 +25,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent
 DEFAULT_INSTALL_DIR = "~/.code-router"
 
-BACKENDS = ("codex", "claude", "gemini")
+BACKENDS = ("codex", "claude", "gemini", "copilot")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

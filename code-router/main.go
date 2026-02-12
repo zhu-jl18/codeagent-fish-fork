@@ -230,7 +230,7 @@ func run() (exitCode int) {
 			}
 
 			if !backendSpecified {
-				fmt.Fprintln(os.Stderr, "ERROR: --backend is required in --parallel mode (supported: codex, claude, gemini)")
+				fmt.Fprintln(os.Stderr, "ERROR: --backend is required in --parallel mode (supported: codex, claude, gemini, copilot)")
 				fmt.Fprintln(os.Stderr, "Usage examples:")
 				fmt.Fprintf(os.Stderr, "  %s --parallel --backend codex < tasks.txt\n", name)
 				fmt.Fprintf(os.Stderr, "  %s --parallel --backend claude <<'EOF'\n", name)
@@ -386,7 +386,12 @@ func run() (exitCode int) {
 		}
 	}
 
-	useStdin := cfg.ExplicitStdin || shouldUseStdin(taskText, piped)
+	stdinCapable := backendSupportsStdinPrompt(cfg.Backend)
+	requestedStdin := cfg.ExplicitStdin || shouldUseStdin(taskText, piped)
+	useStdin := stdinCapable && requestedStdin
+	if requestedStdin && !stdinCapable {
+		logWarn(fmt.Sprintf("%s backend does not support stdin prompt mode; using argument prompt mode", cfg.Backend))
+	}
 
 	targetArg := taskText
 	if useStdin {
@@ -596,7 +601,7 @@ Usage:
 	%[1]s --help
 
 Supported backends:
-	codex | claude | gemini
+	codex | claude | gemini | copilot
 
 Common mistakes:
 	--resume is invalid; use: resume <session_id> <task>
@@ -606,11 +611,12 @@ Common mistakes:
 Parallel mode examples:
 	%[1]s --parallel --backend codex < tasks.txt
 	echo '...' | %[1]s --parallel --backend claude
-	%[1]s --parallel --backend gemini --full-output < tasks.txt
+	%[1]s --parallel --backend gemini < tasks.txt
+	%[1]s --parallel --backend copilot --full-output < tasks.txt
 
 		Prompt Injection (default-on):
 			Prompt file path: ~/.code-router/prompts/<backend>-prompt.md
-		    Backends: codex | claude | gemini
+		    Backends: codex | claude | gemini | copilot
 		    Empty/missing prompt files behave like no injection.
 
 	Runtime Config:

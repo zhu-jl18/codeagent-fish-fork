@@ -650,6 +650,36 @@ func TestExecutorRunCodexTaskWithContext(t *testing.T) {
 		}
 	})
 
+	t.Run("copilotUsesPromptArgModeAndPlainTextFallback", func(t *testing.T) {
+		setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_SKIP_PERMISSIONS": "false"})
+		t.Cleanup(resetRuntimeSettingsForTest)
+
+		var gotArgs []string
+		stdinWriter := &writeCloserStub{}
+		newCommandRunner = func(ctx context.Context, name string, args ...string) commandRunner {
+			gotArgs = append([]string(nil), args...)
+			return &execFakeRunner{
+				stdout:  newReasonReadCloser("copilot answer\n"),
+				stdin:   stdinWriter,
+				process: &execFakeProcess{pid: 16},
+			}
+		}
+
+		_ = closeLogger()
+		res := runCodexTaskWithContext(context.Background(), TaskSpec{ID: "task-copilot", Task: "payload", WorkDir: ".", UseStdin: true}, CopilotBackend{}, nil, false, false, 1)
+		if res.ExitCode != 0 || strings.TrimSpace(res.Message) != "copilot answer" {
+			t.Fatalf("unexpected result: %+v", res)
+		}
+
+		idx := slices.Index(gotArgs, "-p")
+		if idx < 0 || idx+1 >= len(gotArgs) || gotArgs[idx+1] != "payload" {
+			t.Fatalf("expected prompt args '-p payload', got %v", gotArgs)
+		}
+		if stdinWriter.closed.Load() {
+			t.Fatalf("copilot should not write prompt through stdin pipe")
+		}
+	})
+
 	t.Run("missingMessage", func(t *testing.T) {
 		newCommandRunner = func(ctx context.Context, name string, args ...string) commandRunner {
 			return &execFakeRunner{

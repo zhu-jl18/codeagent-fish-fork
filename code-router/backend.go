@@ -1,5 +1,7 @@
 package main
 
+import "strings"
+
 // Backend defines the contract for invoking different AI CLI backends.
 // Each backend is responsible for supplying the executable command and
 // building the argument list based on the wrapper config.
@@ -35,7 +37,7 @@ func runtimeEnvForBackend(backendName string) map[string]string {
 		return nil
 	}
 
-	if backendName == "gemini" {
+	if normalizeBackendName(backendName) == "gemini" {
 		if _, ok := env["GEMINI_API_KEY"]; ok {
 			if _, hasAuth := env["GEMINI_API_KEY_AUTH_MECHANISM"]; !hasAuth {
 				env["GEMINI_API_KEY_AUTH_MECHANISM"] = "bearer"
@@ -44,6 +46,18 @@ func runtimeEnvForBackend(backendName string) map[string]string {
 	}
 
 	return env
+}
+
+func normalizeBackendName(name string) string {
+	return strings.ToLower(strings.TrimSpace(name))
+}
+
+func backendSupportsStdinPrompt(name string) bool {
+	return normalizeBackendName(name) != "copilot"
+}
+
+func backendAllowsPlainTextOutput(name string) bool {
+	return normalizeBackendName(name) == "copilot"
 }
 
 func buildClaudeArgs(cfg *Config, targetArg string) []string {
@@ -103,6 +117,41 @@ func buildGeminiArgs(cfg *Config, targetArg string) []string {
 	} else {
 		args = append(args, targetArg)
 	}
+
+	return args
+}
+
+type CopilotBackend struct{}
+
+func (CopilotBackend) Name() string { return "copilot" }
+func (CopilotBackend) Command() string {
+	return "copilot"
+}
+func (CopilotBackend) BuildArgs(cfg *Config, targetArg string) []string {
+	return buildCopilotArgs(cfg, targetArg)
+}
+
+func buildCopilotArgs(cfg *Config, targetArg string) []string {
+	if cfg == nil {
+		return nil
+	}
+	args := make([]string, 0, 8)
+
+	if cfg.SkipPermissions || envFlagDefaultTrue("CODE_ROUTER_SKIP_PERMISSIONS") {
+		args = append(args, "--allow-all")
+	}
+
+	args = append(args, "--no-custom-instructions")
+
+	if cfg.Mode == "resume" {
+		if cfg.SessionID != "" {
+			args = append(args, "--resume", cfg.SessionID)
+		} else {
+			args = append(args, "--continue")
+		}
+	}
+
+	args = append(args, "--silent", "-p", targetArg)
 
 	return args
 }

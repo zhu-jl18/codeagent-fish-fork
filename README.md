@@ -8,9 +8,18 @@
 
 你会得到什么（Key Concepts）：
 - `/dev` 工作流：需求澄清 → 计划 → 并行执行 → 验证
-- `code-router`：Go 写的执行器；统一 3 个后端 `codex/claude/gemini`；核心机制 `--parallel`
+- `code-router`：Go 写的执行器；统一 4 个后端 `codex/claude/gemini/copilot`；核心机制 `--parallel`
 - `product-requirements` skill：PRD 生成
 - `code-council` skill：多视角并行代码评审（2-3 个 AI reviewer 并行 + host agent 终审）
+
+## 后端定位（推荐）
+
+- `codex`：默认实现后端（复杂逻辑、多文件改造、调试）
+- `claude`：快速修复、配置调整、文档整理
+- `gemini`：前端 UI/UX 原型、样式和交互细化
+- `copilot`：快速仓库阅读、解释、翻译、轻量问答
+- 调用入口约束：四个后端都只通过 `code-router` 调用；不要直接调用 `codex` / `claude` / `gemini` / `copilot` 命令。
+- 边界：`copilot` CLI 当前不提供稳定 JSON 输出参数；`code-router` 对 `copilot` 启用 plain-text fallback（仅此后端）。不要把 `copilot` 作为核心代码实现后端。
 
 你不会得到什么：
 - upstream 里那套 agent 映射/复杂编排（已刻意移除）
@@ -60,6 +69,7 @@ bash scripts/build-dist.sh
 - `~/.code-router/prompts/codex-prompt.md`
 - `~/.code-router/prompts/claude-prompt.md`
 - `~/.code-router/prompts/gemini-prompt.md`
+- `~/.code-router/prompts/copilot-prompt.md`
 
 规则：
 - wrapper 会读取对应后端的 prompt 文件；只有在内容非空时才会 prepend 到任务前面

@@ -256,15 +256,12 @@ func defaultRunCodexTaskFn(task TaskSpec, timeout int) TaskResult {
 			task.Task = wrapTaskWithAgentPrompt(prompt, task.Task)
 		}
 	}
-	if task.UseStdin || shouldUseStdin(task.Task, false) {
-		task.UseStdin = true
-	}
-
 	backend, err := selectBackendFn(backendName)
 	if err != nil {
 		return TaskResult{TaskID: task.ID, ExitCode: 1, Error: err.Error()}
 	}
 	task.Backend = backend.Name()
+	task.UseStdin = backendSupportsStdinPrompt(task.Backend) && (task.UseStdin || shouldUseStdin(task.Task, false))
 
 	parentCtx := task.Context
 	if parentCtx == nil {
@@ -844,6 +841,9 @@ func runCodexTaskWithContext(parentCtx context.Context, taskSpec TaskSpec, backe
 	backendEnv := runtimeEnvForBackend(cfg.Backend)
 
 	useStdin := taskSpec.UseStdin
+	if useStdin && !backendSupportsStdinPrompt(cfg.Backend) {
+		useStdin = false
+	}
 	targetArg := taskSpec.Task
 	if useStdin {
 		targetArg = "-"
@@ -923,7 +923,7 @@ func runCodexTaskWithContext(parentCtx context.Context, taskSpec TaskSpec, backe
 
 	if !silent {
 		// Note: Empty prefix ensures backend output is logged as-is without any wrapper format.
-		// This preserves the original stdout/stderr content from codex/claude/gemini backends.
+		// This preserves the original stdout/stderr content from codex/claude/gemini/copilot backends.
 		// Trade-off: Reduces distinguishability between stdout/stderr in logs, but maintains
 		// output fidelity which is critical for debugging backend-specific issues.
 		stdoutLogger = newLogWriter("", codexLogLineLimit)
@@ -1019,7 +1019,7 @@ func runCodexTaskWithContext(parentCtx context.Context, taskSpec TaskSpec, backe
 	completeSeen := make(chan struct{}, 1)
 	parseCh := make(chan parseResult, 1)
 	go func() {
-		msg, tid := parseJSONStreamInternal(stdoutReader, logWarnFn, logInfoFn, func() {
+		msg, tid := parseBackendStreamInternal(stdoutReader, cfg.Backend, logWarnFn, logInfoFn, func() {
 			select {
 			case messageSeen <- struct{}{}:
 			default:

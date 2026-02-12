@@ -140,6 +140,77 @@ func TestVariousBackendsBuildArgs(t *testing.T) {
 		}
 	})
 
+	t.Run("copilot new mode includes allow-all by default", func(t *testing.T) {
+		backend := CopilotBackend{}
+		cfg := &Config{Mode: "new", WorkDir: "/repo"}
+		got := backend.BuildArgs(cfg, "todo")
+		want := []string{"--allow-all", "--no-custom-instructions", "--silent", "-p", "todo"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("got %v, want %v", got, want)
+		}
+	})
+
+	t.Run("copilot new mode omits allow-all when env disabled", func(t *testing.T) {
+		setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_SKIP_PERMISSIONS": "false"})
+		t.Cleanup(resetRuntimeSettingsForTest)
+		backend := CopilotBackend{}
+		cfg := &Config{Mode: "new", WorkDir: "/repo"}
+		got := backend.BuildArgs(cfg, "todo")
+		want := []string{"--no-custom-instructions", "--silent", "-p", "todo"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("got %v, want %v", got, want)
+		}
+	})
+
+	t.Run("copilot resume mode with session id", func(t *testing.T) {
+		setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_SKIP_PERMISSIONS": "false"})
+		t.Cleanup(resetRuntimeSettingsForTest)
+		backend := CopilotBackend{}
+		cfg := &Config{Mode: "resume", SessionID: "sid-123", WorkDir: "/ignored"}
+		got := backend.BuildArgs(cfg, "resume-task")
+		want := []string{"--no-custom-instructions", "--resume", "sid-123", "--silent", "-p", "resume-task"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("got %v, want %v", got, want)
+		}
+	})
+
+	t.Run("copilot resume mode without session uses --continue", func(t *testing.T) {
+		setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_SKIP_PERMISSIONS": "false"})
+		t.Cleanup(resetRuntimeSettingsForTest)
+		backend := CopilotBackend{}
+		cfg := &Config{Mode: "resume", WorkDir: "/ignored"}
+		got := backend.BuildArgs(cfg, "follow-up")
+		want := []string{"--no-custom-instructions", "--continue", "--silent", "-p", "follow-up"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("got %v, want %v", got, want)
+		}
+	})
+
+	t.Run("copilot nil config returns nil", func(t *testing.T) {
+		backend := CopilotBackend{}
+		if backend.BuildArgs(nil, "ignored") != nil {
+			t.Fatalf("nil config should return nil args")
+		}
+	})
+
+}
+
+func TestBackendRuntimeCapabilities(t *testing.T) {
+	if backendSupportsStdinPrompt("copilot") {
+		t.Fatalf("copilot should not support stdin prompt mode")
+	}
+	if !backendSupportsStdinPrompt("codex") {
+		t.Fatalf("codex should support stdin prompt mode")
+	}
+	if !backendSupportsStdinPrompt("  CLAUDE  ") {
+		t.Fatalf("claude should support stdin prompt mode")
+	}
+	if !backendAllowsPlainTextOutput("copilot") {
+		t.Fatalf("copilot should allow plain text output")
+	}
+	if backendAllowsPlainTextOutput("gemini") {
+		t.Fatalf("gemini should not allow plain text output fallback")
+	}
 }
 
 func TestClaudeBuildArgs_BackendMetadata(t *testing.T) {
@@ -150,6 +221,7 @@ func TestClaudeBuildArgs_BackendMetadata(t *testing.T) {
 	}{
 		{backend: CodexBackend{}, name: "codex", command: "codex"},
 		{backend: ClaudeBackend{}, name: "claude", command: "claude"},
+		{backend: CopilotBackend{}, name: "copilot", command: "copilot"},
 		{backend: GeminiBackend{}, name: "gemini", command: "gemini"},
 	}
 
@@ -165,7 +237,8 @@ func TestClaudeBuildArgs_BackendMetadata(t *testing.T) {
 
 func TestRuntimeEnvForBackend(t *testing.T) {
 	t.Run("returns nil when no runtime settings", func(t *testing.T) {
-		resetRuntimeSettingsForTest()
+		setRuntimeSettingsForTest(map[string]string{})
+		t.Cleanup(resetRuntimeSettingsForTest)
 		if got := runtimeEnvForBackend("claude"); len(got) != 0 {
 			t.Fatalf("got %v, want nil/empty", got)
 		}
@@ -174,9 +247,9 @@ func TestRuntimeEnvForBackend(t *testing.T) {
 	t.Run("filters wrapper control keys", func(t *testing.T) {
 		setRuntimeSettingsForTest(map[string]string{
 			"CODE_ROUTER_SKIP_PERMISSIONS": "false",
-			"CODEX_TIMEOUT":                        "7200000",
-			"ANTHROPIC_API_KEY":                    "secret",
-			"FOO":                                  "bar",
+			"CODEX_TIMEOUT":                "7200000",
+			"ANTHROPIC_API_KEY":            "secret",
+			"FOO":                          "bar",
 		})
 		t.Cleanup(resetRuntimeSettingsForTest)
 

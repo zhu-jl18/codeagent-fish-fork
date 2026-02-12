@@ -1,22 +1,23 @@
 ---
 name: code-router
-description: Execute code-router for multi-backend AI code tasks. Supports Codex, Claude, Gemini, with file references (@syntax) and structured output.
+description: Execute code-router for multi-backend AI code tasks. Supports Codex, Claude, Gemini, Copilot, with file references (@syntax) and structured output.
 ---
 
 # code-router Integration
 
 ## Overview
 
-Execute code-router commands with pluggable AI backends(Codex, Claude, Gemini). Supports file references via `@` syntax, parallel task execution with backend selection, and configurable security controls.
+Execute code-router commands with pluggable AI backends (Codex, Claude, Gemini, Copilot). Supports file references via `@` syntax, parallel task execution with backend selection, and configurable security controls.
 
 ## When to Use
 
-When the user explicitly requests a specific backend (Codex, Claude, or Gemini), mentions code-router, or when a skill or command definition explicitly declares a dependency on this skill.
+When the user explicitly requests a specific backend (Codex, Claude, Gemini, or Copilot), mentions code-router, or when a skill or command definition explicitly declares a dependency on this skill.
 
 Applicable scenarios include but are not limited to:
 - Complex code analysis requiring deep understanding
 - Large-scale refactoring across multiple files
 - Automated code generation with backend selection
+- Quick repository reading, explanation, and translation tasks
 
 
 ## Typical Usage for One-Round/New Tasks:
@@ -33,6 +34,7 @@ EOF
 code-router --backend codex "simple task" [working_dir]
 code-router --backend claude "simple task" [working_dir]
 code-router --backend gemini "simple task" [working_dir]
+code-router --backend copilot "simple task" [working_dir]
 ```
 
 ## Common Parameters
@@ -45,7 +47,7 @@ code-router --backend gemini "simple task" [working_dir]
   - Resume uses its own forms: inline `code-router --backend <backend> resume <session_id> "<follow-up task>"` and stdin `code-router --backend <backend> resume <session_id> -`.
 
 - `--backend <backend>` (required)
-  - Select backend explicitly: `codex | claude | gemini`.
+  - Select backend explicitly: `codex | claude | gemini | copilot`.
   - Must be present in both new and resume modes.
   - In parallel mode, this is the global default backend.
   - If a task block defines `backend`, it overrides the global default for that task.
@@ -65,7 +67,7 @@ code-router --backend gemini "simple task" [working_dir]
   - **Summary (default)**: Structured report with changes, output, verification, and review summary.
   - **Full (`--full-output`)**: Complete task messages. Use only when debugging specific failures.
   - Scope: `--full-output` is valid only with `--parallel`; single-task mode does not support this flag.
-  - Backend behavior: mode selection is wrapper-level and works the same for `codex | claude | gemini`.
+  - Backend behavior: mode selection is wrapper-level and works the same for `codex | claude | gemini | copilot`.
 
 ## Return Format:
 
@@ -81,13 +83,14 @@ SESSION_ID: 019a7247-ac9d-71f3-89e2-a823dbd8fd14
 **Note**: This backends selection guide applies only when the user has not explicitly requested a specific backend. If the user specifies a backend, always follow the user's instructions.
 
 
-Quiklook at the differences between backends:
+Quick look at the differences between backends:
 
 | Backend | Command | Description | Best For |
 |---------|---------|-------------|----------|
 | codex | `--backend codex` | OpenAI Codex (default) | Code analysis, complex development, debugging |
 | claude | `--backend claude` | Anthropic Claude | Quick fixes, documentation, prompts |
 | gemini | `--backend gemini` | Google Gemini | UI/UX prototyping |
+| copilot | `--backend copilot` | GitHub Copilot CLI | Fast repository reading, explanation, translation, lightweight Q&A |
 
 For detailed guidance:
 
@@ -109,13 +112,19 @@ For detailed guidance:
 - Interactive element generation with accessibility support
 - Example: "Create a responsive dashboard layout with sidebar navigation and data visualization cards"
 
+**Copilot**:
+- Fast repository reading and context summarization
+- Explanation and translation tasks (docs/comments/specs)
+- Lightweight Q&A where short turnaround matters
+- Example: "Read @README.md and @docs/api.md, then explain the architecture in plain Chinese"
+
 A Typical Backend Switching Example:
 - Start with Codex for analysis, switch to Claude for documentation, then Gemini for UI implementation.
 - Use per-task backend selection in parallel mode to optimize for each task's strengths
 
 ## Resume Session
 
-Supported backends all support resume mode: `codex | claude | gemini`.
+Supported backends all support resume mode: `codex | claude | gemini | copilot`.
 
 **1) Standard resume (HEREDOC)**
 ```bash
@@ -153,85 +162,59 @@ Resume mode relies on backend session context.
 - Standard form: `code-router --backend <backend> resume <SESSION_ID> ...`.
 
 
-## Parallel Execution
+## Parallel Mode (`--parallel`)
 
-Parallel mode uses a dependency DAG scheduler.
+`--parallel` is the execution entry for submitting multiple tasks in one run.
 
-- `id` defines a unique task node.
-- `dependencies: a, b` means this task waits for tasks `a` and `b` to succeed.
-- Tasks in the same DAG layer run concurrently; the next layer starts only after the current layer finishes.
-- If a dependency fails, dependent tasks are skipped.
-- Invalid dependency IDs or dependency cycles fail fast before execution starts.
-- `--backend` in parallel mode is a required global fallback; tasks without `backend` use it. Usually set to `codex`.
+- Each task must define a unique `id`.
+- `--backend` is a required global fallback; tasks without `backend` use it. Usually set to `codex`.
 - `backend` inside a task block overrides the global fallback for that task.
+- Tasks without `dependencies` are independent and can run concurrently.
 
-ASCII execution model:
-```text
-layer 0: task1      taskX
-           |          |
-layer 1: task2      taskY
-             \      /
-layer 2:      task3
-```
-
-**1) Dependency scheduling (global backend fallback)**
+**1) Basic parallel (independent tasks, global backend fallback)**
 ```bash
 code-router --parallel --backend codex <<'EOF'
 ---TASK---
-id: task1
-workdir: /path/to/dir
+id: scan-api
 ---CONTENT---
-analyze code structure
+scan @src/api and summarize route structure
+
 ---TASK---
-id: task2
-dependencies: task1
+id: scan-db
 ---CONTENT---
-design architecture based on task1 analysis
+scan @src/db and summarize data access patterns
 EOF
 ```
 
-**2) Per-task backend override (mixed backends)**
+**2) Parallel with per-task backend override (mixed backends)**
 ```bash
 code-router --parallel --backend codex <<'EOF'
 ---TASK---
-id: task1
+id: analyze
 ---CONTENT---
 analyze code structure
+
 ---TASK---
-id: task2
+id: document
 backend: claude
-dependencies: task1
 ---CONTENT---
-design architecture based on task1 analysis
+write technical notes based on the analysis
+
 ---TASK---
-id: task3
+id: ui-draft
 backend: gemini
-dependencies: task2
 ---CONTENT---
-generate implementation code
+draft UI layout from the same requirements
+
+---TASK---
+id: explain
+backend: copilot
+---CONTENT---
+explain findings in simpler language for onboarding docs
 EOF
 ```
 
-**3) Minimal mixed-backend example (annotated)**
-```bash
-code-router --parallel --backend codex <<'EOF'
----TASK---
-id: prep
-# uses global backend codex
----CONTENT---
-scan @src and list key modules
-
----TASK---
-id: plan
-backend: claude
-# overrides global backend for this task
-dependencies: prep
----CONTENT---
-write implementation plan based on prep output
-EOF
-```
-
-In parallel mode, output has two styles:
+Output styles in parallel mode:
 
 **1) Summary mode (default, no flag)**
 ```bash
@@ -250,6 +233,75 @@ code-router --parallel --backend codex --full-output <<'EOF'
 id: t1
 ---CONTENT---
 analyze @src and summarize architecture changes
+EOF
+```
+
+## DAG Scheduling (inside `--parallel`)
+
+When a task declares `dependencies`, `--parallel` runs tasks as a DAG scheduler.
+
+- `dependencies: a, b` means this task waits for tasks `a` and `b` to succeed.
+- Tasks in the same DAG layer run concurrently; the next layer starts only after the current layer finishes.
+- If a dependency fails, dependent tasks are skipped.
+- Invalid dependency IDs or dependency cycles fail fast before execution starts.
+
+ASCII execution model:
+```text
+layer 0: task1      taskX
+           |          |
+layer 1: task2      taskY
+             \      /
+layer 2:      task3
+```
+
+**1) Dependency scheduling (DAG with mixed backends)**
+```bash
+code-router --parallel --backend codex <<'EOF'
+---TASK---
+id: task1
+workdir: /path/to/dir
+---CONTENT---
+analyze code structure
+
+---TASK---
+id: task2
+backend: claude
+dependencies: task1
+---CONTENT---
+design architecture based on task1 analysis
+
+---TASK---
+id: task3
+backend: gemini
+dependencies: task2
+---CONTENT---
+generate implementation code
+
+---TASK---
+id: task4
+backend: copilot
+dependencies: task1
+---CONTENT---
+explain task1 findings in simple language for onboarding docs
+EOF
+```
+
+**2) Minimal DAG example (annotated)**
+```bash
+code-router --parallel --backend codex <<'EOF'
+---TASK---
+id: prep
+# uses global backend codex
+---CONTENT---
+scan @src and list key modules
+
+---TASK---
+id: plan
+backend: claude
+# overrides global backend for this task
+dependencies: prep
+---CONTENT---
+write implementation plan based on prep output
 EOF
 ```
 
@@ -280,7 +332,7 @@ Host-agnostic tool-call template (field names vary by runtime):
 Field names depend on the host tool schema.
 Timeout policy: always set explicit timeout by task complexity; do not rely on implicit defaults.
 
-Note: `--backend` is required; supported values: `codex | claude | gemini`
+Note: `--backend` is required; supported values: `codex | claude | gemini | copilot`
 ```
 
 **Parallel Tasks**:
@@ -345,7 +397,7 @@ Note: Global --backend is required; per-task backend is optional
 - Hard rule: kill/terminate is allowed **only when the user explicitly requests it**.
 - Do not kill processes automatically because of long runtime or wait timeout.
 - Use staged termination and stop escalation as soon as processes exit.
-- Name-based global cleanup (`pkill -x codex/claude/gemini`) is prohibited.
+- Name-based global cleanup (`pkill -x codex/claude/gemini/copilot`) is prohibited.
 
 1. **Graceful stop wrapper first**:
    ```bash
@@ -379,5 +431,5 @@ Note: Global --backend is required; per-task backend is optional
 4. **Post-check**:
    ```bash
    pgrep -fa code-router
-   pgrep -fa 'codex|claude|gemini'
+   pgrep -fa 'codex|claude|gemini|copilot'
    ```

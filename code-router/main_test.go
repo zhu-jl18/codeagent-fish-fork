@@ -1628,6 +1628,7 @@ func TestRun_DefaultPromptInjectionPrefixesTask(t *testing.T) {
 	}{
 		{name: "codex injects", backend: "codex", prompt: "LINE1\nLINE2\n", wantPrefix: true},
 		{name: "claude injects", backend: "claude", prompt: "P\n", wantPrefix: true},
+		{name: "copilot injects", backend: "copilot", prompt: "C\n", wantPrefix: true},
 		{name: "gemini empty is no-op", backend: "gemini", prompt: "   \n", wantPrefix: false},
 	}
 
@@ -1798,6 +1799,7 @@ func TestBackendSelectBackend(t *testing.T) {
 		{"codex", "codex", CodexBackend{}},
 		{"claude mixed case", "ClAuDe", ClaudeBackend{}},
 		{"gemini", "gemini", GeminiBackend{}},
+		{"copilot", "copilot", CopilotBackend{}},
 	}
 
 	for _, tt := range tests {
@@ -1818,6 +1820,10 @@ func TestBackendSelectBackend(t *testing.T) {
 			case GeminiBackend:
 				if _, ok := got.(GeminiBackend); !ok {
 					t.Fatalf("expected GeminiBackend, got %T", got)
+				}
+			case CopilotBackend:
+				if _, ok := got.(CopilotBackend); !ok {
+					t.Fatalf("expected CopilotBackend, got %T", got)
 				}
 			}
 		})
@@ -1943,8 +1949,30 @@ func TestGeminiBackendBuildArgs_OutputValidation(t *testing.T) {
 	}
 }
 
+func TestBackendBuildArgs_CopilotBackend(t *testing.T) {
+	setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_SKIP_PERMISSIONS": "false"})
+	t.Cleanup(resetRuntimeSettingsForTest)
+
+	backend := CopilotBackend{}
+	cfg := &Config{Mode: "new"}
+	got := backend.BuildArgs(cfg, "task")
+	want := []string{"--no-custom-instructions", "--silent", "-p", "task"}
+	if len(got) != len(want) {
+		t.Fatalf("length mismatch")
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("index %d got %s want %s", i, got[i], want[i])
+		}
+	}
+
+	if backend.BuildArgs(nil, "ignored") != nil {
+		t.Fatalf("nil config should return nil args")
+	}
+}
+
 func TestBackendNamesAndCommands(t *testing.T) {
-	tests := []Backend{CodexBackend{}, ClaudeBackend{}, GeminiBackend{}}
+	tests := []Backend{CodexBackend{}, ClaudeBackend{}, GeminiBackend{}, CopilotBackend{}}
 	expected := []struct {
 		name    string
 		command string
@@ -1952,6 +1980,7 @@ func TestBackendNamesAndCommands(t *testing.T) {
 		{"codex", "codex"},
 		{"claude", "claude"},
 		{"gemini", "gemini"},
+		{"copilot", "copilot"},
 	}
 
 	for i, backend := range tests {
@@ -4091,6 +4120,41 @@ func TestRun_ExplicitStdinSuccess(t *testing.T) {
 	output := stdout.String()
 	if !strings.Contains(output, "from-stdin") || !strings.Contains(output, "SESSION_ID: tid-stdin") {
 		t.Fatalf("unexpected output: %q", output)
+	}
+}
+
+func TestRun_CopilotPromptModeDisablesStdinPipeline(t *testing.T) {
+	defer resetTestHooks()
+	cleanupLogsFn = func() (CleanupStats, error) { return CleanupStats{}, nil }
+
+	selectBackendFn = func(name string) (Backend, error) {
+		return testBackend{
+			name:    "copilot",
+			command: "copilot",
+			argsFn: func(cfg *Config, targetArg string) []string {
+				return []string{"-p", targetArg}
+			},
+		}, nil
+	}
+
+	var seen TaskSpec
+	runTaskFn = func(task TaskSpec, silent bool, timeout int) TaskResult {
+		seen = task
+		return TaskResult{ExitCode: 0, Message: "ok"}
+	}
+
+	stdinReader = strings.NewReader("line1\nline2")
+	isTerminalFn = func() bool { return false }
+	os.Args = []string{"code-router", "--backend", "copilot", "-"}
+
+	if code := run(); code != 0 {
+		t.Fatalf("run exit=%d, want 0", code)
+	}
+	if seen.UseStdin {
+		t.Fatalf("copilot should not use stdin mode")
+	}
+	if seen.Task != "line1\nline2" {
+		t.Fatalf("task=%q, want stdin content", seen.Task)
 	}
 }
 

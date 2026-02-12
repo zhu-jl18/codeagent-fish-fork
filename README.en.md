@@ -12,7 +12,16 @@ What you get:
 - `/dev` workflow (requirements -> plan -> parallel execution -> verification)
 - `product-requirements` skill (PRD generator)
 - `code-council` skill (multi-perspective parallel code review with host agent final pass)
-- `code-router` (Go executor; backends: `codex` / `claude` / `gemini`; core: `--parallel`)
+- `code-router` (Go executor; backends: `codex` / `claude` / `gemini` / `copilot`; core: `--parallel`)
+
+## Backend Positioning (Recommended)
+
+- `codex`: default implementation backend (complex logic, multi-file refactors, debugging)
+- `claude`: fast fixes, config updates, documentation cleanup
+- `gemini`: frontend UI/UX prototyping, styling, and interaction polish
+- `copilot`: fast repo reading, explanation, translation, lightweight Q&A
+- Invocation rule: all four backends must be invoked through `code-router`; do not call `codex` / `claude` / `gemini` / `copilot` directly.
+- Boundary: Copilot CLI does not provide a stable JSON output flag path; `code-router` enables plain-text fallback only for `copilot`. Do not use `copilot` as the primary backend for core code implementation.
 
 ## Install (WSL2/Linux + macOS + Windows)
 
@@ -54,6 +63,7 @@ Default prompt placeholder files:
 - `~/.code-router/prompts/codex-prompt.md`
 - `~/.code-router/prompts/claude-prompt.md`
 - `~/.code-router/prompts/gemini-prompt.md`
+- `~/.code-router/prompts/copilot-prompt.md`
 
 Behavior:
 - Wrapper loads the per-backend prompt and prepends it only if it has non-empty content.

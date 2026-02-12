@@ -53,6 +53,14 @@ func parseJSONStreamWithLog(r io.Reader, warnFn func(string), infoFn func(string
 	return parseJSONStreamInternal(r, warnFn, infoFn, nil, nil)
 }
 
+func parseBackendStreamWithWarn(r io.Reader, backendName string, warnFn func(string)) (message, threadID string) {
+	return parseBackendStreamWithLog(r, backendName, warnFn, logInfo)
+}
+
+func parseBackendStreamWithLog(r io.Reader, backendName string, warnFn func(string), infoFn func(string)) (message, threadID string) {
+	return parseBackendStreamInternal(r, backendName, warnFn, infoFn, nil, nil)
+}
+
 const (
 	jsonLineReaderSize   = 64 * 1024
 	jsonLineMaxBytes     = 10 * 1024 * 1024
@@ -88,6 +96,19 @@ type ItemContent struct {
 }
 
 func parseJSONStreamInternal(r io.Reader, warnFn func(string), infoFn func(string), onMessage func(), onComplete func()) (message, threadID string) {
+	return parseJSONStreamInternalWithOptions(r, warnFn, infoFn, onMessage, onComplete, parseStreamOptions{})
+}
+
+type parseStreamOptions struct {
+	allowPlainTextFallback bool
+}
+
+func parseBackendStreamInternal(r io.Reader, backendName string, warnFn func(string), infoFn func(string), onMessage func(), onComplete func()) (message, threadID string) {
+	opts := parseStreamOptions{allowPlainTextFallback: backendAllowsPlainTextOutput(backendName)}
+	return parseJSONStreamInternalWithOptions(r, warnFn, infoFn, onMessage, onComplete, opts)
+}
+
+func parseJSONStreamInternalWithOptions(r io.Reader, warnFn func(string), infoFn func(string), onMessage func(), onComplete func(), opts parseStreamOptions) (message, threadID string) {
 	reader := bufio.NewReaderSize(r, jsonLineReaderSize)
 
 	if warnFn == nil {
@@ -117,6 +138,8 @@ func parseJSONStreamInternal(r io.Reader, warnFn func(string), infoFn func(strin
 		geminiBuffer   strings.Builder
 		geminiResult   string
 		geminiSawDelta bool
+		plainTextBuf   strings.Builder
+		hasJSONEvent   bool
 	)
 
 	for {
@@ -129,10 +152,16 @@ func parseJSONStreamInternal(r io.Reader, warnFn func(string), infoFn func(strin
 			break
 		}
 
-		line = bytes.TrimSpace(line)
-		if len(line) == 0 {
+		rawLine := line
+		trimmedLine := bytes.TrimSpace(line)
+		if len(trimmedLine) == 0 {
+			if opts.allowPlainTextFallback {
+				plainTextBuf.Write(rawLine)
+				plainTextBuf.WriteString("\n")
+			}
 			continue
 		}
+		line = trimmedLine
 		totalEvents++
 
 		if tooLong {
@@ -143,9 +172,16 @@ func parseJSONStreamInternal(r io.Reader, warnFn func(string), infoFn func(strin
 		// Single unmarshal for all backend types
 		var event UnifiedEvent
 		if err := json.Unmarshal(line, &event); err != nil {
+			if opts.allowPlainTextFallback {
+				plainTextBuf.Write(rawLine)
+				plainTextBuf.WriteString("\n")
+				continue
+			}
 			warnFn(fmt.Sprintf("Failed to parse event: %s", truncateBytes(line, 100)))
 			continue
 		}
+
+		hasJSONEvent = true
 
 		// Detect backend type by field presence
 		isCodex := event.ThreadID != ""
@@ -303,8 +339,10 @@ func parseJSONStreamInternal(r io.Reader, warnFn func(string), infoFn func(strin
 		message = geminiBuffer.String()
 	case claudeMessage != "":
 		message = claudeMessage
-	default:
+	case codexMessage != "":
 		message = codexMessage
+	case opts.allowPlainTextFallback && !hasJSONEvent && plainTextBuf.Len() > 0:
+		message = plainTextBuf.String()
 	}
 
 	infoFn(fmt.Sprintf("parseJSONStream completed: events=%d, message_len=%d, thread_id_found=%t", totalEvents, len(message), threadID != ""))
