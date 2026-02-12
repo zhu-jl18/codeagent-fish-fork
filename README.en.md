@@ -11,6 +11,7 @@ Fork notice:
 What you get:
 - `/dev` workflow (requirements -> plan -> parallel execution -> verification)
 - `product-requirements` skill (PRD generator)
+- `code-council` skill (multi-perspective parallel code review with host agent final pass)
 - `code-router` (Go executor; backends: `codex` / `claude` / `gemini`; core: `--parallel`)
 
 ## Install (WSL2/Linux + macOS + Windows)
@@ -33,7 +34,7 @@ Installer outputs:
 Not automated (manual by design):
 - No auto-copy of `skills/`, `dev-workflow/commands`, or `dev-workflow/agents` into your target CLI root/project scope
 - Manually copy what you need based on your target CLI:
-  - **Skills**: pick from `skills/*` (for example: `skills/dev`, `skills/code-router`)
+  - **Skills**: pick from `skills/*` (for example: `skills/dev`, `skills/code-router`, `skills/code-council`)
   - **/dev command (Claude Code, etc.)**: use `dev-workflow/commands/dev.md` and `dev-workflow/agents/*`
 
 ## Maintain (Rebuild Dist Binaries)
@@ -71,6 +72,11 @@ In Claude Code:
 PRD:
 ```text
 /product-requirements "write a PRD for feature X"
+```
+
+Code review:
+```text
+Review @src/auth/ using code-council
 ```
 
 ## Dev

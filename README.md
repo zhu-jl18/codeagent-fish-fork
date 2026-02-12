@@ -10,6 +10,7 @@
 - `/dev` 工作流：需求澄清 → 计划 → 并行执行 → 验证
 - `code-router`：Go 写的执行器；统一 3 个后端 `codex/claude/gemini`；核心机制 `--parallel`
 - `product-requirements` skill：PRD 生成
+- `code-council` skill：多视角并行代码评审（2-3 个 AI reviewer 并行 + host agent 终审）
 
 你不会得到什么：
 - upstream 里那套 agent 映射/复杂编排（已刻意移除）
@@ -36,7 +37,7 @@ python3 install.py --skip-wrapper
 不会自动做的事（必须手动）：
 - 不会自动复制 `skills/` / `dev-workflow/commands` / `dev-workflow/agents` 到你的目标 CLI root 或 project scope
 - 需要按你的目标 CLI 自行手动复制：
-  - **Skills**：从本仓库 `skills/*` 里挑需要的（例如 `skills/dev`、`skills/code-router`）
+  - **Skills**：从本仓库 `skills/*` 里挑需要的（例如 `skills/dev`、`skills/code-router`、`skills/code-council`）
   - **/dev command（Claude Code 等）**：使用 `dev-workflow/commands/dev.md` 与 `dev-workflow/agents/*`
 
 提示：
@@ -77,6 +78,11 @@ bash scripts/build-dist.sh
 PRD：
 ```text
 /product-requirements "为功能 X 写 PRD"
+```
+
+代码评审：
+```text
+Review @src/auth/ using code-council
 ```
 
 ## 开发/测试
