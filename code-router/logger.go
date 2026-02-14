@@ -430,7 +430,7 @@ func (l *Logger) run() {
 	}
 }
 
-// cleanupOldLogs scans os.TempDir() for wrapper log files and removes those
+// cleanupOldLogs scans os.TempDir() for router log files and removes those
 // whose owning process is no longer running (i.e., orphaned logs).
 // It includes safety checks for:
 // - PID reuse: Compares file modification time with process start time
@@ -441,7 +441,7 @@ func cleanupOldLogs() (CleanupStats, error) {
 
 	prefixes := logPrefixes()
 	if len(prefixes) == 0 {
-		prefixes = []string{defaultWrapperName}
+		prefixes = []string{defaultRouterName}
 	}
 
 	seen := make(map[string]struct{})
@@ -606,7 +606,7 @@ func parsePIDFromLog(path string) (int, bool) {
 	name := filepath.Base(path)
 	prefixes := logPrefixes()
 	if len(prefixes) == 0 {
-		prefixes = []string{defaultWrapperName}
+		prefixes = []string{defaultRouterName}
 	}
 
 	for _, prefix := range prefixes {

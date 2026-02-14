@@ -141,7 +141,7 @@ func TestRuntimeEnvForBackend(t *testing.T) {
 		}
 	})
 
-	t.Run("filters wrapper control keys", func(t *testing.T) {
+	t.Run("filters router control keys", func(t *testing.T) {
 		setRuntimeSettingsForTest(map[string]string{
 			"CODE_ROUTER_SKIP_PERMISSIONS": "false",
 			"CODE_ROUTER_TIMEOUT":          "7200",

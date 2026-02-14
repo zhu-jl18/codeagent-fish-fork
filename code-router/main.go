@@ -110,7 +110,7 @@ func main() {
 
 // run is the main logic, returns exit code for testability
 func run() (exitCode int) {
-	name := currentWrapperName()
+	name := currentRouterName()
 	// Handle --help first (no logger needed)
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
@@ -570,8 +570,8 @@ func runCleanupHook() {
 }
 
 func printHelp() {
-	name := currentWrapperName()
-	help := fmt.Sprintf(`%[1]s - Go wrapper for AI CLI backends
+	name := currentRouterName()
+	help := fmt.Sprintf(`%[1]s - Go router for AI CLI backends
 
 Usage:
 	%[1]s --backend <backend> "task" [workdir]

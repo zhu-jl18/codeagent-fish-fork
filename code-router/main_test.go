@@ -835,7 +835,7 @@ func TestRunCodexTask_ParseStall(t *testing.T) {
 	result := runCodexTask(TaskSpec{Task: "stall"}, false, 60)
 	elapsed := time.Since(start)
 	if !blockingCmd.injected.Load() {
-		t.Fatalf("stdout wrapper was not installed")
+		t.Fatalf("stdout reader was not installed")
 	}
 
 	if result.ExitCode == 0 || result.Error == "" {

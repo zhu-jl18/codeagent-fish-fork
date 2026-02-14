@@ -912,7 +912,7 @@ func runCodexTaskWithContext(parentCtx context.Context, taskSpec TaskSpec, backe
 	}
 
 	if !silent {
-		// Note: Empty prefix ensures backend output is logged as-is without any wrapper format.
+		// Note: Empty prefix ensures backend output is logged as-is without any router format.
 		// This preserves the original stdout/stderr content from codex/claude/gemini backends.
 		// Trade-off: Reduces distinguishability between stdout/stderr in logs, but maintains
 		// output fidelity which is critical for debugging backend-specific issues.

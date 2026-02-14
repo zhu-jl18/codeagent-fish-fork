@@ -361,7 +361,7 @@ func TestExecutorHelperCoverage(t *testing.T) {
 
 		results := executeConcurrent([][]TaskSpec{{{ID: "wrap"}}}, 1)
 		if len(results) != 1 || results[0].TaskID != "wrap" {
-			t.Fatalf("unexpected wrapper results: %+v", results)
+			t.Fatalf("unexpected results: %+v", results)
 		}
 
 		unbounded := executeConcurrentWithContext(context.Background(), [][]TaskSpec{{{ID: "unbounded"}}}, 1, 0)
@@ -747,7 +747,7 @@ func TestConcurrentExecutorParallelLogIsolationAndClosure(t *testing.T) {
 	t.Setenv("TMPDIR", tempDir)
 
 	oldArgs := os.Args
-	os.Args = []string{defaultWrapperName}
+	os.Args = []string{defaultRouterName}
 	t.Cleanup(func() { os.Args = oldArgs })
 
 	mainLogger, err := NewLoggerWithSuffix("concurrent-main")

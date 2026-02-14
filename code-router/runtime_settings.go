@@ -16,7 +16,7 @@ type runtimeSettingsOverrideState struct {
 
 var runtimeSettingsOverride runtimeSettingsOverrideState
 
-func resolveWrapperHomeDir() string {
+func resolveRouterHomeDir() string {
 	home, err := os.UserHomeDir()
 	if err != nil || strings.TrimSpace(home) == "" {
 		return ""
@@ -24,8 +24,8 @@ func resolveWrapperHomeDir() string {
 	return filepath.Join(home, ".code-router")
 }
 
-func resolveWrapperEnvFile() string {
-	base := resolveWrapperHomeDir()
+func resolveRouterEnvFile() string {
+	base := resolveRouterHomeDir()
 	if base == "" {
 		return ""
 	}
@@ -33,7 +33,7 @@ func resolveWrapperEnvFile() string {
 }
 
 func resolvePromptBaseDir() string {
-	base := resolveWrapperHomeDir()
+	base := resolveRouterHomeDir()
 	if base == "" {
 		return ""
 	}
@@ -95,7 +95,7 @@ func lookupRuntimeSetting(key string) (string, bool) {
 	}
 	runtimeSettingsOverride.mu.RUnlock()
 
-	settings := loadRuntimeSettingsFile(resolveWrapperEnvFile())
+	settings := loadRuntimeSettingsFile(resolveRouterEnvFile())
 	value, ok := settings[key]
 	if !ok {
 		return "", false
@@ -115,7 +115,7 @@ func runtimeInjectedEnv() map[string]string {
 	if runtimeSettingsOverride.enabled {
 		out := make(map[string]string)
 		for key, value := range runtimeSettingsOverride.values {
-			if isWrapperControlKey(key) {
+			if isRouterControlKey(key) {
 				continue
 			}
 			if strings.TrimSpace(key) == "" {
@@ -131,14 +131,14 @@ func runtimeInjectedEnv() map[string]string {
 	}
 	runtimeSettingsOverride.mu.RUnlock()
 
-	settings := loadRuntimeSettingsFile(resolveWrapperEnvFile())
+	settings := loadRuntimeSettingsFile(resolveRouterEnvFile())
 	if len(settings) == 0 {
 		return nil
 	}
 
 	out := make(map[string]string)
 	for key, value := range settings {
-		if isWrapperControlKey(key) {
+		if isRouterControlKey(key) {
 			continue
 		}
 		if strings.TrimSpace(key) == "" {
@@ -153,7 +153,7 @@ func runtimeInjectedEnv() map[string]string {
 	return out
 }
 
-func isWrapperControlKey(key string) bool {
+func isRouterControlKey(key string) bool {
 	return strings.HasPrefix(key, "CODE_ROUTER_")
 }
 

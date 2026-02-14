@@ -733,7 +733,7 @@ func TestRunStartupCleanupRemovesOrphansEndToEnd(t *testing.T) {
 	}
 }
 
-func TestRunStartupCleanupConcurrentWrappers(t *testing.T) {
+func TestRunStartupCleanupConcurrentRouters(t *testing.T) {
 	defer resetTestHooks()
 
 	tempDir := setTempDirEnv(t, t.TempDir())

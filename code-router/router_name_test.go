@@ -20,7 +20,7 @@ func TestCurrentWrapperNameFallsBackToExecutable(t *testing.T) {
 		return execPath, nil
 	}
 
-	if got := currentWrapperName(); got != defaultWrapperName {
-		t.Fatalf("currentWrapperName() = %q, want %q", got, defaultWrapperName)
+	if got := currentRouterName(); got != defaultRouterName {
+		t.Fatalf("currentRouterName() = %q, want %q", got, defaultRouterName)
 	}
 }
