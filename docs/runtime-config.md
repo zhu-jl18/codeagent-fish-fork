@@ -14,7 +14,7 @@ All runtime options are loaded from:
 ~/.code-dispatcher/.env
 ```
 
-The wrapper does not read these control options from shell environment variables anymore.
+The dispatcher does not read these control options from shell environment variables anymore.
 
 ## 2) Backend Approval/Bypass
 
@@ -33,7 +33,7 @@ All backends run with approval bypass hardcoded (no toggle):
 - `CODE_DISPATCHER_MAX_PARALLEL_WORKERS`
   - default: unlimited (`0`)
   - recommended: `8`
-  - hard cap in wrapper: `100`
+  - hard cap in dispatcher: `100`
 
 - `CODE_DISPATCHER_ASCII_MODE`
   - `true` => ASCII status (`PASS/WARN/FAIL`)
@@ -58,7 +58,7 @@ Supported backends: `codex`, `claude`, `gemini`.
 There are usually two timeout layers:
 
 - outer caller timeout (e.g., tool invocation timeout)
-- wrapper timeout (`CODE_DISPATCHER_TIMEOUT` from `.env`)
+- dispatcher timeout (`CODE_DISPATCHER_TIMEOUT` from `.env`)
 
 Effective timeout is whichever triggers first.
 

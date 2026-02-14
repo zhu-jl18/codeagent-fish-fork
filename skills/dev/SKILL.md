@@ -52,7 +52,7 @@ These rules have HIGHEST PRIORITY and override all other instructions:
   - Iterate 2-3 rounds until clear; rely on judgment; keep questions concise
   - After clarification complete: MUST create a task tracking list with workflow steps before any analysis
 
-- **Step 2: code-dispatcher Deep Analysis (Plan Mode Style) [CODE-ROUTER ONLY]**
+- **Step 2: code-dispatcher Deep Analysis (Plan Mode Style) [CODE-DISPATCHER ONLY]**
 
   MUST invoke `code-dispatcher` from a shell/terminal for deep analysis. Do NOT call backend CLIs directly. Do NOT do deep analysis by manually exploring the codebase in the host environment - delegate exploration to code-dispatcher.
 
@@ -140,7 +140,7 @@ These rules have HIGHEST PRIORITY and override all other instructions:
     - Options: "Confirm and execute" / "Need adjustments"
   - If user chooses "Need adjustments", return to Step 1 or Step 2 based on feedback
 
-- **Step 4: Parallel Development Execution [CODE-ROUTER ONLY - NO DIRECT EDITS]**
+- **Step 4: Parallel Development Execution [CODE-DISPATCHER ONLY - NO DIRECT EDITS]**
   - MUST invoke `code-dispatcher --parallel --backend <backend>` from a shell/terminal for ALL code changes
   - NEVER invoke `codex` / `claude` / `gemini` directly; route all execution through `code-dispatcher`
   - NEVER modify code directly outside code-dispatcher

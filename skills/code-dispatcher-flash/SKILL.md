@@ -159,7 +159,7 @@ layer 2:      task3             (waits for both)
 
 Kill/terminate is allowed **only when the user explicitly requests it**. Do not kill processes automatically because of long runtime or wait timeout. Name-based global cleanup (`pkill -x codex/claude/gemini`) is prohibited.
 
-1. **Graceful stop wrapper first:**
+1. **Graceful stop dispatcher first:**
    ```bash
    pgrep -fa code-dispatcher
    pkill -INT -f '(^|/)code-dispatcher( |$)'
@@ -172,7 +172,7 @@ Kill/terminate is allowed **only when the user explicitly requests it**. Do not 
    pkill -KILL -f '(^|/)code-dispatcher( |$)'
    ```
 
-3. **Cleanup only descendants of target wrapper PID:**
+3. **Cleanup only descendants of target code-dispatcher PID:**
    ```bash
    WRAPPER_PID=$(pgrep -n -f '(^|/)code-dispatcher( |$)')
    pkill -TERM -P "$WRAPPER_PID" 2>/dev/null || true
