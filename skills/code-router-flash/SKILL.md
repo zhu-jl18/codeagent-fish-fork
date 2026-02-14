@@ -1,5 +1,5 @@
 ---
-name: code-router
+name: code-router-flash
 description: Execute code-router for multi-backend AI code tasks. Use when the user explicitly requests a specific backend (Codex, Claude, or Gemini), mentions code-router, or when a skill or command definition declares a dependency on this skill. Supports pluggable backends (codex/claude/gemini), parallel task execution with DAG scheduling, session resume, and structured output.
 ---
 

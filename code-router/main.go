@@ -204,13 +204,13 @@ func run() (exitCode int) {
 					}
 					backendName = value
 					backendSpecified = true
-			default:
+				default:
 					extras = append(extras, arg)
 				}
 			}
 
 			if len(extras) > 0 {
-			fmt.Fprintln(os.Stderr, "ERROR: --parallel reads its task configuration from stdin; only --backend and --full-output are allowed.")
+				fmt.Fprintln(os.Stderr, "ERROR: --parallel reads its task configuration from stdin; only --backend and --full-output are allowed.")
 				fmt.Fprintln(os.Stderr, "Usage examples:")
 				fmt.Fprintf(os.Stderr, "  %s --parallel --backend codex < tasks.txt\n", name)
 				fmt.Fprintf(os.Stderr, "  echo '...' | %s --parallel --backend claude\n", name)
