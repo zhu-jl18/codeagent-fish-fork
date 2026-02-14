@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Installer for code-router runtime assets.
+"""Installer for code-dispatcher runtime assets.
 
 Installs:
-- code-router binary (downloaded from GitHub Release assets)
-- per-backend prompt placeholders under ~/.code-router/prompts
-- ~/.code-router/.env template for runtime configuration
+- code-dispatcher binary (downloaded from GitHub Release assets)
+- per-backend prompt placeholders under ~/.code-dispatcher/prompts
+- ~/.code-dispatcher/.env template for runtime configuration
 
 Targets:
 - WSL2/Linux
@@ -25,7 +25,7 @@ import urllib.request
 from pathlib import Path
 
 
-DEFAULT_INSTALL_DIR = "~/.code-router"
+DEFAULT_INSTALL_DIR = "~/.code-dispatcher"
 DEFAULT_RELEASE_REPO = "zhu-jl18/code-router"
 DEFAULT_RELEASE_TAG = "latest"
 HTTP_TIMEOUT_SEC = 30
@@ -34,11 +34,11 @@ BACKENDS = ("codex", "claude", "gemini")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Installer for code-router")
+    p = argparse.ArgumentParser(description="Installer for code-dispatcher")
     p.add_argument(
         "--install-dir",
         default=DEFAULT_INSTALL_DIR,
-        help="Install directory (default: ~/.code-router)",
+        help="Install directory (default: ~/.code-dispatcher)",
     )
     p.add_argument(
         "--force",
@@ -46,9 +46,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Overwrite existing files",
     )
     p.add_argument(
-        "--skip-router",
+        "--skip-dispatcher",
         action="store_true",
-        help="Skip installing code-router binary (only install runtime config/assets)",
+        help="Skip installing code-dispatcher binary (only install runtime config/assets)",
     )
     p.add_argument(
         "--repo",
@@ -83,13 +83,13 @@ def _install_prompts(install_dir: Path, *, force: bool) -> None:
 
 def _install_env_template(install_dir: Path, *, force: bool) -> None:
     env_template = (
-        "# code-router runtime config\n"
+        "# code-dispatcher runtime config\n"
         "# Values are loaded only from this file.\n\n"
-        "# CODE_ROUTER_TIMEOUT in seconds (default: 7200)\n"
-        "CODE_ROUTER_TIMEOUT=7200\n\n"
-        "CODE_ROUTER_ASCII_MODE=false\n"
-        "CODE_ROUTER_MAX_PARALLEL_WORKERS=0\n"
-        "CODE_ROUTER_LOGGER_CLOSE_TIMEOUT_MS=5000\n"
+        "# CODE_DISPATCHER_TIMEOUT in seconds (default: 7200)\n"
+        "CODE_DISPATCHER_TIMEOUT=7200\n\n"
+        "CODE_DISPATCHER_ASCII_MODE=false\n"
+        "CODE_DISPATCHER_MAX_PARALLEL_WORKERS=0\n"
+        "CODE_DISPATCHER_LOGGER_CLOSE_TIMEOUT_MS=5000\n"
     )
     _write_if_missing(install_dir / ".env", env_template, force=force)
 
@@ -100,11 +100,11 @@ def _get_artifact_name() -> str:
     machine = platform.machine().lower()
 
     if system == "Windows" and machine in ("amd64", "x86_64"):
-        return "code-router-windows-amd64.exe"
+        return "code-dispatcher-windows-amd64.exe"
     if system == "Darwin" and machine in ("arm64", "aarch64"):
-        return "code-router-darwin-arm64"
+        return "code-dispatcher-darwin-arm64"
     if system == "Linux" and machine in ("amd64", "x86_64"):
-        return "code-router-linux-amd64"
+        return "code-dispatcher-linux-amd64"
 
     raise RuntimeError(f"unsupported platform for release asset: {system}/{machine}")
 
@@ -112,7 +112,7 @@ def _get_artifact_name() -> str:
 def _github_headers() -> dict[str, str]:
     headers = {
         "Accept": "application/vnd.github+json",
-        "User-Agent": "code-router-installer",
+        "User-Agent": "code-dispatcher-installer",
     }
     token = os.environ.get("GITHUB_TOKEN", "").strip()
     if token:
@@ -171,7 +171,7 @@ def _resolve_asset_download_url(release: dict, asset_name: str) -> str:
 def _download_to_path(url: str, out: Path) -> None:
     _ensure_dir(out.parent)
     tmp = out.with_suffix(out.suffix + ".tmp")
-    req = urllib.request.Request(url, headers={"User-Agent": "code-router-installer"})
+    req = urllib.request.Request(url, headers={"User-Agent": "code-dispatcher-installer"})
     try:
         with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT_SEC) as resp:
             with tmp.open("wb") as f:
@@ -187,7 +187,7 @@ def _download_to_path(url: str, out: Path) -> None:
 def _install_router_from_release(install_dir: Path, *, repo: str, tag: str, force: bool) -> Path:
     bin_dir = install_dir / "bin"
     _ensure_dir(bin_dir)
-    exe_name = "code-router.exe" if os.name == "nt" else "code-router"
+    exe_name = "code-dispatcher.exe" if os.name == "nt" else "code-dispatcher"
     out = bin_dir / exe_name
 
     if out.exists() and not force:
@@ -266,7 +266,7 @@ def main(argv: list[str] | None = None) -> int:
     _install_env_template(install_dir, force=args.force)
 
     router_path: Path | None = None
-    if not args.skip_router:
+    if not args.skip_dispatcher:
         try:
             router_path = _install_router_from_release(
                 install_dir,
@@ -276,7 +276,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         except (FileNotFoundError, RuntimeError) as e:
             print(f"ERROR: {e}", file=sys.stderr)
-            print("Hint: verify network access and release assets, or use --skip-router to install config only.", file=sys.stderr)
+            print("Hint: verify network access and release assets, or use --skip-dispatcher to install config only.", file=sys.stderr)
             return 1
 
     print(f"Installed to: {install_dir}")

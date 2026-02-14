@@ -17,11 +17,11 @@ const (
 	defaultWorkdir        = "."
 	defaultTimeout        = 7200 // seconds (2 hours)
 	defaultCoverageTarget = 90.0
-	codexLogLineLimit     = 1000
+	logLineLimit     = 1000
 	stdinSpecialChars     = "\n\\\"'`$"
 	stderrCaptureLimit    = 4 * 1024
 	defaultBackendName    = "codex"
-	defaultCodexCommand   = "codex"
+	defaultBackendCommand   = "codex"
 
 	// stdout close reasons
 	stdoutCloseReasonWait  = "wait-done"
@@ -34,11 +34,11 @@ const (
 var (
 	stdinReader  io.Reader = os.Stdin
 	isTerminalFn           = defaultIsTerminal
-	codexCommand           = defaultCodexCommand
+	backendCommand           = defaultBackendCommand
 	cleanupHook  func()
 	loggerPtr    atomic.Pointer[Logger]
 
-	buildCodexArgsFn   = buildCodexArgs
+	buildArgsFn   = buildCodexArgs
 	selectBackendFn    = selectBackend
 	commandContext     = exec.CommandContext
 	cleanupLogsFn      = cleanupOldLogs
@@ -47,7 +47,7 @@ var (
 	signalNotifyCtxFn  = signal.NotifyContext
 	terminateCommandFn = terminateCommand
 	defaultBuildArgsFn = buildCodexArgs
-	runTaskFn          = runCodexTask
+	runTaskFn          = runTask
 	exitFn             = os.Exit
 )
 
@@ -110,7 +110,7 @@ func main() {
 
 // run is the main logic, returns exit code for testability
 func run() (exitCode int) {
-	name := currentWrapperName()
+	name := currentDispatcherName()
 	// Handle --help first (no logger needed)
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
@@ -315,16 +315,16 @@ func run() (exitCode int) {
 	}
 	cfg.Backend = backend.Name()
 
-	cmdInjected := codexCommand != defaultCodexCommand
-	argsInjected := buildCodexArgsFn != nil && reflect.ValueOf(buildCodexArgsFn).Pointer() != reflect.ValueOf(defaultBuildArgsFn).Pointer()
+	cmdInjected := backendCommand != defaultBackendCommand
+	argsInjected := buildArgsFn != nil && reflect.ValueOf(buildArgsFn).Pointer() != reflect.ValueOf(defaultBuildArgsFn).Pointer()
 
 	// Wire selected backend into runtime hooks for the rest of the execution,
 	// but preserve any injected test hooks for the default backend.
 	if backend.Name() != defaultBackendName || !cmdInjected {
-		codexCommand = backend.Command()
+		backendCommand = backend.Command()
 	}
 	if backend.Name() != defaultBackendName || !argsInjected {
-		buildCodexArgsFn = backend.BuildArgs
+		buildArgsFn = backend.BuildArgs
 	}
 	logInfo(fmt.Sprintf("Selected backend: %s", backend.Name()))
 
@@ -381,12 +381,12 @@ func run() (exitCode int) {
 	if useStdin {
 		targetArg = "-"
 	}
-	codexArgs := buildCodexArgsFn(cfg, targetArg)
+	backendArgs := buildArgsFn(cfg, targetArg)
 
 	// Print startup information to stderr
 	fmt.Fprintf(os.Stderr, "[%s]\n", name)
 	fmt.Fprintf(os.Stderr, "  Backend: %s\n", cfg.Backend)
-	fmt.Fprintf(os.Stderr, "  Command: %s %s\n", codexCommand, strings.Join(codexArgs, " "))
+	fmt.Fprintf(os.Stderr, "  Command: %s %s\n", backendCommand, strings.Join(backendArgs, " "))
 	fmt.Fprintf(os.Stderr, "  PID: %d\n", os.Getpid())
 	fmt.Fprintf(os.Stderr, "  Log: %s\n", logger.Path())
 
@@ -570,8 +570,8 @@ func runCleanupHook() {
 }
 
 func printHelp() {
-	name := currentWrapperName()
-	help := fmt.Sprintf(`%[1]s - Go wrapper for AI CLI backends
+	name := currentDispatcherName()
+	help := fmt.Sprintf(`%[1]s - Go dispatcher for AI CLI backends
 
 Usage:
 	%[1]s --backend <backend> "task" [workdir]
@@ -596,14 +596,14 @@ Parallel mode examples:
 	%[1]s --parallel --backend gemini < tasks.txt
 
 		Prompt Injection (default-on):
-			Prompt file path: ~/.code-router/prompts/<backend>-prompt.md
+			Prompt file path: ~/.code-dispatcher/prompts/<backend>-prompt.md
 		    Backends: codex | claude | gemini
 		    Empty/missing prompt files behave like no injection.
 
 	Runtime Config:
-	    ~/.code-router/.env (single source of truth)
-	    Supported keys include: CODE_ROUTER_TIMEOUT, CODE_ROUTER_ASCII_MODE,
-	    CODE_ROUTER_MAX_PARALLEL_WORKERS, CODE_ROUTER_LOGGER_CLOSE_TIMEOUT_MS
+	    ~/.code-dispatcher/.env (single source of truth)
+	    Supported keys include: CODE_DISPATCHER_TIMEOUT, CODE_DISPATCHER_ASCII_MODE,
+	    CODE_DISPATCHER_MAX_PARALLEL_WORKERS, CODE_DISPATCHER_LOGGER_CLOSE_TIMEOUT_MS
 
 Exit Codes:
     0    Success

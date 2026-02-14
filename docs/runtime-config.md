@@ -1,4 +1,4 @@
-# code-router Runtime Config
+# code-dispatcher Runtime Config
 
 This document is the single source of truth for runtime behavior related to:
 
@@ -11,10 +11,10 @@ This document is the single source of truth for runtime behavior related to:
 All runtime options are loaded from:
 
 ```text
-~/.code-router/.env
+~/.code-dispatcher/.env
 ```
 
-The wrapper does not read these control options from shell environment variables anymore.
+The dispatcher does not read these control options from shell environment variables anymore.
 
 ## 2) Backend Approval/Bypass
 
@@ -26,20 +26,20 @@ All backends run with approval bypass hardcoded (no toggle):
 
 ## 3) Runtime Keys in `.env`
 
-- `CODE_ROUTER_TIMEOUT`
+- `CODE_DISPATCHER_TIMEOUT`
   - default: `7200` (seconds, 2 hours)
   - unit: seconds
 
-- `CODE_ROUTER_MAX_PARALLEL_WORKERS`
+- `CODE_DISPATCHER_MAX_PARALLEL_WORKERS`
   - default: unlimited (`0`)
   - recommended: `8`
-  - hard cap in wrapper: `100`
+  - hard cap in dispatcher: `100`
 
-- `CODE_ROUTER_ASCII_MODE`
+- `CODE_DISPATCHER_ASCII_MODE`
   - `true` => ASCII status (`PASS/WARN/FAIL`)
   - otherwise => Unicode status symbols
 
-- `CODE_ROUTER_LOGGER_CLOSE_TIMEOUT_MS`
+- `CODE_DISPATCHER_LOGGER_CLOSE_TIMEOUT_MS`
   - default: `5000`
   - `0` => wait indefinitely
 
@@ -48,7 +48,7 @@ All backends run with approval bypass hardcoded (no toggle):
 Prompt files are resolved from:
 
 ```text
-~/.code-router/prompts/<backend>-prompt.md
+~/.code-dispatcher/prompts/<backend>-prompt.md
 ```
 
 Supported backends: `codex`, `claude`, `gemini`.
@@ -58,7 +58,7 @@ Supported backends: `codex`, `claude`, `gemini`.
 There are usually two timeout layers:
 
 - outer caller timeout (e.g., tool invocation timeout)
-- wrapper timeout (`CODE_ROUTER_TIMEOUT` from `.env`)
+- dispatcher timeout (`CODE_DISPATCHER_TIMEOUT` from `.env`)
 
 Effective timeout is whichever triggers first.
 
@@ -67,5 +67,5 @@ Effective timeout is whichever triggers first.
 Edit the file directly:
 
 ```bash
-${EDITOR:-vi} ~/.code-router/.env
+${EDITOR:-vi} ~/.code-dispatcher/.env
 ```

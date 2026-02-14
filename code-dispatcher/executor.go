@@ -231,8 +231,8 @@ func newTaskLoggerHandle(taskID string) taskLoggerHandle {
 	return taskLoggerHandle{}
 }
 
-// defaultRunCodexTaskFn is the default implementation of runCodexTaskFn (exposed for test reset)
-func defaultRunCodexTaskFn(task TaskSpec, timeout int) TaskResult {
+// defaultRunParallelTaskFn is the default implementation of runParallelTaskFn (exposed for test reset)
+func defaultRunParallelTaskFn(task TaskSpec, timeout int) TaskResult {
 	if task.WorkDir == "" {
 		task.WorkDir = defaultWorkdir
 	}
@@ -267,10 +267,10 @@ func defaultRunCodexTaskFn(task TaskSpec, timeout int) TaskResult {
 	if parentCtx == nil {
 		parentCtx = context.Background()
 	}
-	return runCodexTaskWithContext(parentCtx, task, backend, nil, false, true, timeout)
+	return runTaskWithContext(parentCtx, task, backend, nil, false, true, timeout)
 }
 
-var runCodexTaskFn = defaultRunCodexTaskFn
+var runParallelTaskFn = defaultRunParallelTaskFn
 
 func topologicalSort(tasks []TaskSpec) ([][]TaskSpec, error) {
 	idToTask := make(map[string]TaskSpec, len(tasks))
@@ -474,7 +474,7 @@ func executeConcurrentWithContext(parentCtx context.Context, layers [][]TaskSpec
 
 				printTaskStart(ts.ID, taskLogPath, handle.shared)
 
-				res := runCodexTaskFn(ts, timeout)
+				res := runParallelTaskFn(ts, timeout)
 				if taskLogPath != "" {
 					if res.LogPath == "" || (handle.shared && handle.logger != nil && res.LogPath == handle.logger.Path()) {
 						res.LogPath = taskLogPath
@@ -533,7 +533,7 @@ func shouldSkipTask(task TaskSpec, failed map[string]TaskResult) (bool, string) 
 
 // getStatusSymbols returns status symbols based on ASCII mode.
 func getStatusSymbols() (success, warning, failed string) {
-	if parseBoolFlag(getEnv("CODE_ROUTER_ASCII_MODE", ""), false) {
+	if parseBoolFlag(getEnv("CODE_DISPATCHER_ASCII_MODE", ""), false) {
 		return "PASS", "WARN", "FAIL"
 	}
 	return "✓", "⚠️", "✗"
@@ -777,16 +777,16 @@ func buildCodexArgs(cfg *Config, targetArg string) []string {
 	)
 }
 
-func runCodexTask(taskSpec TaskSpec, silent bool, timeoutSec int) TaskResult {
-	return runCodexTaskWithContext(context.Background(), taskSpec, nil, nil, false, silent, timeoutSec)
+func runTask(taskSpec TaskSpec, silent bool, timeoutSec int) TaskResult {
+	return runTaskWithContext(context.Background(), taskSpec, nil, nil, false, silent, timeoutSec)
 }
 
-func runCodexProcess(parentCtx context.Context, codexArgs []string, taskText string, useStdin bool, timeoutSec int) (message, threadID string, exitCode int) {
-	res := runCodexTaskWithContext(parentCtx, TaskSpec{Task: taskText, WorkDir: defaultWorkdir, Mode: "new", UseStdin: useStdin}, nil, codexArgs, true, false, timeoutSec)
+func runBackendProcess(parentCtx context.Context, backendArgs []string, taskText string, useStdin bool, timeoutSec int) (message, threadID string, exitCode int) {
+	res := runTaskWithContext(parentCtx, TaskSpec{Task: taskText, WorkDir: defaultWorkdir, Mode: "new", UseStdin: useStdin}, nil, backendArgs, true, false, timeoutSec)
 	return res.Message, res.SessionID, res.ExitCode
 }
 
-func runCodexTaskWithContext(parentCtx context.Context, taskSpec TaskSpec, backend Backend, customArgs []string, useCustomArgs bool, silent bool, timeoutSec int) TaskResult {
+func runTaskWithContext(parentCtx context.Context, taskSpec TaskSpec, backend Backend, customArgs []string, useCustomArgs bool, silent bool, timeoutSec int) TaskResult {
 	if parentCtx == nil {
 		parentCtx = taskSpec.Context
 	}
@@ -806,8 +806,8 @@ func runCodexTaskWithContext(parentCtx context.Context, taskSpec TaskSpec, backe
 		Backend:         defaultBackendName,
 	}
 
-	commandName := codexCommand
-	argsBuilder := buildCodexArgsFn
+	commandName := backendCommand
+	argsBuilder := buildArgsFn
 	if backend != nil {
 		commandName = backend.Command()
 		argsBuilder = backend.BuildArgs
@@ -839,11 +839,11 @@ func runCodexTaskWithContext(parentCtx context.Context, taskSpec TaskSpec, backe
 		targetArg = "-"
 	}
 
-	var codexArgs []string
+	var backendArgs []string
 	if useCustomArgs {
-		codexArgs = customArgs
+		backendArgs = customArgs
 	} else {
-		codexArgs = argsBuilder(cfg, targetArg)
+		backendArgs = argsBuilder(cfg, targetArg)
 	}
 
 	prefixMsg := func(msg string) string {
@@ -912,12 +912,12 @@ func runCodexTaskWithContext(parentCtx context.Context, taskSpec TaskSpec, backe
 	}
 
 	if !silent {
-		// Note: Empty prefix ensures backend output is logged as-is without any wrapper format.
+		// Note: Empty prefix ensures backend output is logged as-is without any dispatcher format.
 		// This preserves the original stdout/stderr content from codex/claude/gemini backends.
 		// Trade-off: Reduces distinguishability between stdout/stderr in logs, but maintains
 		// output fidelity which is critical for debugging backend-specific issues.
-		stdoutLogger = newLogWriter("", codexLogLineLimit)
-		stderrLogger = newLogWriter("", codexLogLineLimit)
+		stdoutLogger = newLogWriter("", logLineLimit)
+		stderrLogger = newLogWriter("", logLineLimit)
 	}
 
 	ctx := parentCtx
@@ -934,7 +934,7 @@ func runCodexTaskWithContext(parentCtx context.Context, taskSpec TaskSpec, backe
 		return fmt.Sprintf("%s; stderr: %s", msg, stderrBuf.String())
 	}
 
-	cmd := newCommandRunner(ctx, commandName, codexArgs...)
+	cmd := newCommandRunner(ctx, commandName, backendArgs...)
 
 	if len(backendEnv) > 0 {
 		cmd.SetEnv(backendEnv)
@@ -1027,7 +1027,7 @@ func runCodexTaskWithContext(parentCtx context.Context, taskSpec TaskSpec, backe
 		parseCh <- parseResult{message: msg, threadID: tid}
 	}()
 
-	logInfoFn(fmt.Sprintf("Starting %s with args: %s %s...", commandName, commandName, strings.Join(codexArgs[:min(5, len(codexArgs))], " ")))
+	logInfoFn(fmt.Sprintf("Starting %s with args: %s...", commandName, strings.Join(backendArgs[:min(5, len(backendArgs))], " ")))
 
 	if err := cmd.Start(); err != nil {
 		closeWithReason(stdout, "start-failed")
@@ -1304,7 +1304,7 @@ func cancelReason(commandName string, ctx context.Context) string {
 	}
 
 	if commandName == "" {
-		commandName = codexCommand
+		commandName = backendCommand
 	}
 
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {

@@ -1,4 +1,6 @@
 # Build artifacts
+code-dispatcher
+code-dispatcher.exe
 code-router
 code-router.exe
 *.test

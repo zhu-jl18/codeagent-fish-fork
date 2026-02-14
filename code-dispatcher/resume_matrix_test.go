@@ -112,7 +112,7 @@ func TestResumeConversation_SupportedBackends(t *testing.T) {
 				return newFakeCmd(fakeCmdConfig{})
 			}
 
-			first := runCodexTaskWithContext(
+			first := runTaskWithContext(
 				context.Background(),
 				TaskSpec{ID: "new", Task: "hello", WorkDir: ".", Mode: "new"},
 				tt.backend,
@@ -128,7 +128,7 @@ func TestResumeConversation_SupportedBackends(t *testing.T) {
 				t.Fatalf("new session=%q, want %q (res=%+v)", first.SessionID, tt.sessionID, first)
 			}
 
-			second := runCodexTaskWithContext(
+			second := runTaskWithContext(
 				context.Background(),
 				TaskSpec{ID: "resume", Task: "follow-up", WorkDir: ".", Mode: "resume", SessionID: first.SessionID},
 				tt.backend,

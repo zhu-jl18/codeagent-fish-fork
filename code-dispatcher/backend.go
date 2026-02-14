@@ -4,7 +4,7 @@ import "strings"
 
 // Backend defines the contract for invoking different AI CLI backends.
 // Each backend is responsible for supplying the executable command and
-// building the argument list based on the wrapper config.
+// building the argument list based on the dispatcher config.
 type Backend interface {
 	Name() string
 	BuildArgs(cfg *Config, targetArg string) []string

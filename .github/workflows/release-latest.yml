@@ -23,7 +23,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: code-router/go.mod
+          go-version-file: code-dispatcher/go.mod
           cache: false
 
       - name: Build cross-platform binaries
@@ -32,7 +32,7 @@ jobs:
       - name: Generate checksums
         run: |
           cd dist
-          sha256sum code-router-linux-amd64 code-router-darwin-arm64 code-router-windows-amd64.exe > SHA256SUMS
+          sha256sum code-dispatcher-linux-amd64 code-dispatcher-darwin-arm64 code-dispatcher-windows-amd64.exe > SHA256SUMS
 
       - name: Force-update latest tag to current commit
         run: |
@@ -49,22 +49,22 @@ jobs:
 
           if gh release view latest >/dev/null 2>&1; then
             gh release upload latest \
-              dist/code-router-linux-amd64 \
-              dist/code-router-darwin-arm64 \
-              dist/code-router-windows-amd64.exe \
+              dist/code-dispatcher-linux-amd64 \
+              dist/code-dispatcher-darwin-arm64 \
+              dist/code-dispatcher-windows-amd64.exe \
               dist/SHA256SUMS \
               --clobber
             gh release edit latest \
-              --title "code-router latest" \
+              --title "code-dispatcher latest" \
               --notes "Rolling latest build from main commit ${GITHUB_SHA}" \
               --latest
           else
             gh release create latest \
-              dist/code-router-linux-amd64 \
-              dist/code-router-darwin-arm64 \
-              dist/code-router-windows-amd64.exe \
+              dist/code-dispatcher-linux-amd64 \
+              dist/code-dispatcher-darwin-arm64 \
+              dist/code-dispatcher-windows-amd64.exe \
               dist/SHA256SUMS \
-              --title "code-router latest" \
+              --title "code-dispatcher latest" \
               --notes "Rolling latest build from main commit ${GITHUB_SHA}" \
               --latest
           fi

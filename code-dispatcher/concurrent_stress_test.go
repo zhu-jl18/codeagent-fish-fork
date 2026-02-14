@@ -331,8 +331,8 @@ func TestLoggerOrderPreservation(t *testing.T) {
 }
 
 func TestConcurrentWorkerPoolLimit(t *testing.T) {
-	orig := runCodexTaskFn
-	defer func() { runCodexTaskFn = orig }()
+	orig := runParallelTaskFn
+	defer func() { runParallelTaskFn = orig }()
 
 	logger, err := NewLoggerWithSuffix("pool-limit")
 	if err != nil {
@@ -346,7 +346,7 @@ func TestConcurrentWorkerPoolLimit(t *testing.T) {
 
 	var active int64
 	var maxSeen int64
-	runCodexTaskFn = func(task TaskSpec, timeout int) TaskResult {
+	runParallelTaskFn = func(task TaskSpec, timeout int) TaskResult {
 		if task.Context == nil {
 			t.Fatalf("context not propagated for task %s", task.ID)
 		}
@@ -392,13 +392,13 @@ func TestConcurrentWorkerPoolLimit(t *testing.T) {
 }
 
 func TestConcurrentCancellationPropagation(t *testing.T) {
-	orig := runCodexTaskFn
-	defer func() { runCodexTaskFn = orig }()
+	orig := runParallelTaskFn
+	defer func() { runParallelTaskFn = orig }()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	runCodexTaskFn = func(task TaskSpec, timeout int) TaskResult {
+	runParallelTaskFn = func(task TaskSpec, timeout int) TaskResult {
 		if task.Context == nil {
 			t.Fatalf("context not propagated for task %s", task.ID)
 		}

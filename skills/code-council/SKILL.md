@@ -1,14 +1,14 @@
 ---
 name: code-council
-description: Multi-backend parallel code review using code-router. Runs 2-3 AI reviewers simultaneously, then the host agent verifies findings and synthesizes a final report.
-compatibility: Requires code-router skill with at least 2 backends configured (codex, claude, gemini).
+description: Multi-backend parallel code review using code-dispatcher. Runs 2-3 AI reviewers simultaneously, then the host agent verifies findings and synthesizes a final report.
+compatibility: Requires code-dispatcher skill with at least 2 backends configured (codex, claude, gemini).
 ---
 
 # code-council: Multi-Backend Code Review
 
 ## Overview
 
-Leverage code-router's multi-backend parallel execution to run multiple AI reviewers simultaneously, each performing an independent comprehensive code review. The **host agent then verifies each finding and synthesizes the final report** — ensuring only real issues are presented to the user.
+Leverage code-dispatcher's multi-backend parallel execution to run multiple AI reviewers simultaneously, each performing an independent comprehensive code review. The **host agent then verifies each finding and synthesizes the final report** — ensuring only real issues are presented to the user.
 
 ## When to Use
 
@@ -29,7 +29,7 @@ Resolve target files from user input:
 
 If scope is ambiguous, ask the user to clarify.
 
-`@` references are resolved by code-router at execution time — the host agent passes them through as-is, no pre-processing needed.
+`@` references are resolved by code-dispatcher at execution time — the host agent passes them through as-is, no pre-processing needed.
 
 ### Step 2: Determine Backends
 
@@ -41,7 +41,7 @@ Resolution order:
 
 ### Step 3: Build & Execute Parallel Review
 
-Construct a single `code-router --parallel` invocation. All backends receive the **same review prompt**.
+Construct a single `code-dispatcher --parallel` invocation. All backends receive the **same review prompt**.
 
 #### Review Prompt (single source of truth)
 
@@ -72,7 +72,7 @@ For each finding:
 Generate one `---TASK---` block per selected backend. Each block uses `id: review_<backend>`, sets `backend: <backend>`, and pastes the review prompt above into `---CONTENT---`.
 
 ```bash
-code-router --parallel --backend codex <<'EOF'
+code-dispatcher --parallel --backend codex <<'EOF'
 ---TASK---
 id: review_codex
 backend: codex
@@ -91,9 +91,9 @@ For 3 backends, add a third `---TASK---` block for gemini. For 1 backend, use a 
 
 ### Step 4: Host Agent Verification & Synthesis (MANDATORY — DO NOT SKIP)
 
-After code-router returns, the host agent MUST verify findings and synthesize the final report.
+After code-dispatcher returns, the host agent MUST verify findings and synthesize the final report.
 
-Each code-router task is a full AI agent with complete filesystem access — it can read any file, run git commands, and explore the entire project. What they lack is the **user's conversation context** — the host agent knows what the user has been discussing, their priorities, and their intent.
+Each code-dispatcher task is a full AI agent with complete filesystem access — it can read any file, run git commands, and explore the entire project. What they lack is the **user's conversation context** — the host agent knows what the user has been discussing, their priorities, and their intent.
 
 #### Verification Rules
 
@@ -119,7 +119,7 @@ Each code-router task is a full AI agent with complete filesystem access — it 
 ### Step 5: Offer Follow-up Actions
 
 After presenting, offer concrete next steps:
-- **Fix critical issues**: generate fix tasks and run them through code-router
+- **Fix critical issues**: generate fix tasks and run them through code-dispatcher
 - **Review more files**: restart the workflow on another target
 - **Save report**: write to a file if the user wants a record
 
@@ -147,7 +147,7 @@ After presenting, offer concrete next steps:
 ## Critical Rules
 
 1. **MUST perform Step 4 (verification & synthesis)** — this is the core value proposition
-2. **MUST use code-router skill** — this skill depends on code-router's `--parallel` execution
+2. **MUST use code-dispatcher skill** — this skill depends on code-dispatcher's `--parallel` execution
 3. **MUST be called by host agent only** — this skill is NOT designed for sub-agent use
 4. **NEVER modify source code in this skill** — code-council is read-only; fixes go through a separate action
 5. **NEVER ask backend selection questions** when the user's intent is clear — resolve from invocation or use defaults

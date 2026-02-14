@@ -62,9 +62,9 @@ func TestExtractFilesChanged(t *testing.T) {
 		want []string
 	}{
 		{"root file", "Modified: main.go\n", []string{"main.go"}},
-		{"path file", "Created: code-router/utils.go\n", []string{"code-router/utils.go"}},
-		{"at prefix", "Updated: @code-router/main.go\n", []string{"code-router/main.go"}},
-		{"token scan", "Files: @main.go, @code-router/utils.go\n", []string{"main.go", "code-router/utils.go"}},
+		{"path file", "Created: code-dispatcher/utils.go\n", []string{"code-dispatcher/utils.go"}},
+		{"at prefix", "Updated: @code-dispatcher/main.go\n", []string{"code-dispatcher/main.go"}},
+		{"token scan", "Files: @main.go, @code-dispatcher/utils.go\n", []string{"main.go", "code-dispatcher/utils.go"}},
 		{"space path", "Modified: dir/with space/file.go\n", []string{"dir/with space/file.go"}},
 	}
 
