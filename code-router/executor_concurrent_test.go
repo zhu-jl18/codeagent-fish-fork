@@ -281,9 +281,6 @@ func TestExecutorHelperCoverage(t *testing.T) {
 	})
 
 	t.Run("generateFinalOutputAndArgs", func(t *testing.T) {
-		setRuntimeSettingsForTest(map[string]string{"CODEX_BYPASS_SANDBOX": "false"})
-		t.Cleanup(resetRuntimeSettingsForTest)
-
 		out := generateFinalOutput([]TaskResult{
 			{TaskID: "ok", ExitCode: 0},
 			{TaskID: "fail", ExitCode: 1, Error: "boom"},
@@ -303,11 +300,11 @@ func TestExecutorHelperCoverage(t *testing.T) {
 		}
 
 		args := buildCodexArgs(&Config{Mode: "new", WorkDir: "/tmp"}, "task")
-		if !slices.Equal(args, []string{"e", "--skip-git-repo-check", "-C", "/tmp", "--json", "task"}) {
+		if !slices.Equal(args, []string{"e", "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check", "-C", "/tmp", "--json", "task"}) {
 			t.Fatalf("unexpected codex args: %+v", args)
 		}
 		args = buildCodexArgs(&Config{Mode: "resume", SessionID: "sess"}, "target")
-		if !slices.Equal(args, []string{"e", "--skip-git-repo-check", "--json", "resume", "sess", "target"}) {
+		if !slices.Equal(args, []string{"e", "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check", "--json", "resume", "sess", "target"}) {
 			t.Fatalf("unexpected resume args: %+v", args)
 		}
 	})
@@ -625,28 +622,6 @@ func TestExecutorRunCodexTaskWithContext(t *testing.T) {
 		}
 		if rc == nil || rc.dir != "/tmp" {
 			t.Fatalf("expected backend to set cmd.Dir, got runner=%v dir=%q", rc, rc.dir)
-		}
-	})
-
-	t.Run("claudeSkipPermissionsPropagatesFromTaskSpec", func(t *testing.T) {
-		setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_SKIP_PERMISSIONS": "false"})
-		t.Cleanup(resetRuntimeSettingsForTest)
-		var gotArgs []string
-		newCommandRunner = func(ctx context.Context, name string, args ...string) commandRunner {
-			gotArgs = append([]string(nil), args...)
-			return &execFakeRunner{
-				stdout:  newReasonReadCloser(`{"type":"item.completed","item":{"type":"agent_message","text":"ok"}}`),
-				process: &execFakeProcess{pid: 15},
-			}
-		}
-
-		_ = closeLogger()
-		res := runCodexTaskWithContext(context.Background(), TaskSpec{ID: "task-skip", Task: "payload", WorkDir: ".", SkipPermissions: true}, ClaudeBackend{}, nil, false, false, 1)
-		if res.ExitCode != 0 || res.Error != "" {
-			t.Fatalf("unexpected result: %+v", res)
-		}
-		if !slices.Contains(gotArgs, "--dangerously-skip-permissions") {
-			t.Fatalf("expected --dangerously-skip-permissions in args, got %v", gotArgs)
 		}
 	})
 

@@ -6,11 +6,10 @@
 
 Fork notice:
 - This is a personal, heavily simplified fork derived from `cexll/myclaude`.
-- Scope: `/dev` workflow + `code-router` + PRD skill. Everything else is intentionally removed.
+- Scope: `/dev` workflow + `code-router`. Everything else is intentionally removed.
 
 What you get:
 - `/dev` workflow (requirements -> plan -> parallel execution -> verification)
-- `product-requirements` skill (PRD generator)
 - `code-council` skill (multi-perspective parallel code review with host agent final pass)
 - `code-router` (Go executor; backends: `codex` / `claude` / `gemini`; core: `--parallel`)
 
@@ -32,7 +31,7 @@ python3 install.py
 Optional:
 ```bash
 python3 install.py --install-dir ~/.code-router --force
-python3 install.py --skip-wrapper
+python3 install.py --skip-router
 python3 install.py --repo zhu-jl18/code-router --release-tag latest
 ```
 
@@ -48,8 +47,8 @@ Not automated (manual by design):
   - **/dev command (Claude Code, etc.)**: use `dev-workflow/commands/dev.md` and `dev-workflow/agents/*`
 
 Notes:
-- `install.py` requires network access to GitHub Releases for wrapper installation.
-- Use `--skip-wrapper` if you only need runtime config/assets.
+- `install.py` requires network access to GitHub Releases for binary installation.
+- Use `--skip-router` if you only need runtime config/assets.
 
 ## Local Build (Optional)
 
@@ -70,7 +69,7 @@ Default prompt placeholder files:
 - `~/.code-router/prompts/gemini-prompt.md`
 
 Behavior:
-- Wrapper loads the per-backend prompt and prepends it only if it has non-empty content.
+- code-router loads the per-backend prompt and prepends it only if it has non-empty content.
 - Empty/whitespace-only or missing prompt files behave like "no injection".
 
 Runtime behavior (approval/bypass flags, timeout, parallel propagation rules):
@@ -81,11 +80,6 @@ Runtime behavior (approval/bypass flags, timeout, parallel propagation rules):
 In Claude Code:
 ```text
 /dev "implement X"
-```
-
-PRD:
-```text
-/product-requirements "write a PRD for feature X"
 ```
 
 Code review:

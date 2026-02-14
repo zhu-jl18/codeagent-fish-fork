@@ -56,11 +56,7 @@ func buildClaudeArgs(cfg *Config, targetArg string) []string {
 	if cfg == nil {
 		return nil
 	}
-	args := []string{"-p"}
-	// Default to skip permissions unless CODE_ROUTER_SKIP_PERMISSIONS=false
-	if cfg.SkipPermissions || envFlagDefaultTrue("CODE_ROUTER_SKIP_PERMISSIONS") {
-		args = append(args, "--dangerously-skip-permissions")
-	}
+	args := []string{"-p", "--dangerously-skip-permissions"}
 
 	if cfg.Mode == "resume" {
 		if cfg.SessionID != "" {

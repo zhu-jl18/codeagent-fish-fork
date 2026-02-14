@@ -1295,53 +1295,11 @@ func TestBackendParseArgs_DashDashStopsFlagParsing(t *testing.T) {
 	}
 }
 
-func TestBackendParseArgs_SkipPermissions(t *testing.T) {
-	const envKey = "CODE_ROUTER_SKIP_PERMISSIONS"
-	setRuntimeSettingsForTest(map[string]string{envKey: "true"})
-	t.Cleanup(resetRuntimeSettingsForTest)
-	os.Args = []string{"code-router", "--backend", "codex", "task"}
-	cfg, err := parseArgs()
-	if err != nil {
-		t.Fatalf("parseArgs() unexpected error: %v", err)
-	}
-	if !cfg.SkipPermissions {
-		t.Fatalf("SkipPermissions should default to true when env is set")
-	}
-
-	os.Args = []string{"code-router", "--backend", "codex", "--skip-permissions=false", "task"}
-	cfg, err = parseArgs()
-	if err != nil {
-		t.Fatalf("parseArgs() unexpected error: %v", err)
-	}
-	if cfg.SkipPermissions {
-		t.Fatalf("SkipPermissions should be false when flag overrides env")
-	}
-
+func TestBackendParseArgs_SkipPermissionsRejected(t *testing.T) {
 	os.Args = []string{"code-router", "--backend", "codex", "--skip-permissions", "task"}
-	cfg, err = parseArgs()
-	if err != nil {
-		t.Fatalf("parseArgs() unexpected error: %v", err)
-	}
-	if !cfg.SkipPermissions {
-		t.Fatalf("SkipPermissions should be true for plain --skip-permissions flag")
-	}
-
-	os.Args = []string{"code-router", "--backend", "codex", "--dangerously-skip-permissions", "task"}
-	cfg, err = parseArgs()
-	if err != nil {
-		t.Fatalf("parseArgs() unexpected error: %v", err)
-	}
-	if !cfg.SkipPermissions {
-		t.Fatalf("SkipPermissions should be true for dangerous flag")
-	}
-
-	os.Args = []string{"code-router", "--backend", "codex", "--dangerously-skip-permissions=false", "task"}
-	cfg, err = parseArgs()
-	if err != nil {
-		t.Fatalf("parseArgs() unexpected error: %v", err)
-	}
-	if cfg.SkipPermissions {
-		t.Fatalf("SkipPermissions should be false when dangerous flag is set to false")
+	_, err := parseArgs()
+	if err == nil {
+		t.Fatalf("parseArgs() should reject --skip-permissions as unknown flag")
 	}
 }
 
@@ -1442,23 +1400,16 @@ do something`
 	}
 }
 
-func TestParallelParseConfig_SkipPermissions(t *testing.T) {
+func TestParallelParseConfig_SkipPermissionsRejected(t *testing.T) {
 	input := `---TASK---
 id: task-1
 skip_permissions: true
 ---CONTENT---
 do something`
 
-	cfg, err := parseParallelConfig([]byte(input))
-	if err != nil {
-		t.Fatalf("parseParallelConfig() unexpected error: %v", err)
-	}
-	if len(cfg.Tasks) != 1 {
-		t.Fatalf("expected 1 task, got %d", len(cfg.Tasks))
-	}
-	task := cfg.Tasks[0]
-	if !task.SkipPermissions {
-		t.Fatalf("SkipPermissions = %v, want true", task.SkipPermissions)
+	_, err := parseParallelConfig([]byte(input))
+	if err == nil {
+		t.Fatalf("expected error for skip_permissions key, got nil")
 	}
 }
 
@@ -1688,13 +1639,11 @@ func TestRun_DefaultPromptInjectionPrefixesTask(t *testing.T) {
 }
 
 func TestRunBuildCodexArgs_NewMode(t *testing.T) {
-	setRuntimeSettingsForTest(map[string]string{"CODEX_BYPASS_SANDBOX": "false"})
-	t.Cleanup(resetRuntimeSettingsForTest)
-
 	cfg := &Config{Mode: "new", WorkDir: "/test/dir"}
 	args := buildCodexArgs(cfg, "my task")
 	expected := []string{
 		"e",
+		"--dangerously-bypass-approvals-and-sandbox",
 		"--skip-git-repo-check",
 		"-C", "/test/dir",
 		"--json",
@@ -1711,13 +1660,11 @@ func TestRunBuildCodexArgs_NewMode(t *testing.T) {
 }
 
 func TestRunBuildCodexArgs_ResumeMode(t *testing.T) {
-	setRuntimeSettingsForTest(map[string]string{"CODEX_BYPASS_SANDBOX": "false"})
-	t.Cleanup(resetRuntimeSettingsForTest)
-
 	cfg := &Config{Mode: "resume", SessionID: "session-abc"}
 	args := buildCodexArgs(cfg, "-")
 	expected := []string{
 		"e",
+		"--dangerously-bypass-approvals-and-sandbox",
 		"--skip-git-repo-check",
 		"--json",
 		"resume",
@@ -1735,12 +1682,9 @@ func TestRunBuildCodexArgs_ResumeMode(t *testing.T) {
 }
 
 func TestRunBuildCodexArgs_ResumeMode_EmptySessionHandledGracefully(t *testing.T) {
-	setRuntimeSettingsForTest(map[string]string{"CODEX_BYPASS_SANDBOX": "false"})
-	t.Cleanup(resetRuntimeSettingsForTest)
-
 	cfg := &Config{Mode: "resume", SessionID: "   ", WorkDir: "/test/dir"}
 	args := buildCodexArgs(cfg, "task")
-	expected := []string{"e", "--skip-git-repo-check", "-C", "/test/dir", "--json", "task"}
+	expected := []string{"e", "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check", "-C", "/test/dir", "--json", "task"}
 	if len(args) != len(expected) {
 		t.Fatalf("len mismatch")
 	}
@@ -1751,21 +1695,7 @@ func TestRunBuildCodexArgs_ResumeMode_EmptySessionHandledGracefully(t *testing.T
 	}
 }
 
-func TestRunBuildCodexArgs_BypassSandboxEnvTrue(t *testing.T) {
-	defer resetTestHooks()
-	tempDir := t.TempDir()
-	t.Setenv("TMPDIR", tempDir)
-
-	logger, err := NewLogger()
-	if err != nil {
-		t.Fatalf("NewLogger() error = %v", err)
-	}
-	setLogger(logger)
-	defer closeLogger()
-
-	setRuntimeSettingsForTest(map[string]string{"CODEX_BYPASS_SANDBOX": "true"})
-	t.Cleanup(resetRuntimeSettingsForTest)
-
+func TestRunBuildCodexArgs_AlwaysBypass(t *testing.T) {
 	cfg := &Config{Mode: "new", WorkDir: "/test/dir"}
 	args := buildCodexArgs(cfg, "my task")
 	found := false
@@ -1777,15 +1707,6 @@ func TestRunBuildCodexArgs_BypassSandboxEnvTrue(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("expected bypass flag in args, got %v", args)
-	}
-
-	logger.Flush()
-	data, err := os.ReadFile(logger.Path())
-	if err != nil {
-		t.Fatalf("failed to read log file: %v", err)
-	}
-	if !strings.Contains(string(data), "CODEX_BYPASS_SANDBOX enabled") {
-		t.Fatalf("expected bypass warning log, got: %s", string(data))
 	}
 }
 
@@ -1841,13 +1762,12 @@ func TestBackendSelectBackend_DefaultOnEmpty(t *testing.T) {
 }
 
 func TestBackendBuildArgs_CodexBackend(t *testing.T) {
-	setRuntimeSettingsForTest(map[string]string{"CODEX_BYPASS_SANDBOX": "false"})
-	t.Cleanup(resetRuntimeSettingsForTest)
 	backend := CodexBackend{}
 	cfg := &Config{Mode: "new", WorkDir: "/test/dir"}
 	got := backend.BuildArgs(cfg, "task")
 	want := []string{
 		"e",
+		"--dangerously-bypass-approvals-and-sandbox",
 		"--skip-git-repo-check",
 		"-C", "/test/dir",
 		"--json",
@@ -1864,12 +1784,10 @@ func TestBackendBuildArgs_CodexBackend(t *testing.T) {
 }
 
 func TestBackendBuildArgs_ClaudeBackend(t *testing.T) {
-	setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_SKIP_PERMISSIONS": "false"})
-	t.Cleanup(resetRuntimeSettingsForTest)
 	backend := ClaudeBackend{}
 	cfg := &Config{Mode: "new", WorkDir: defaultWorkdir}
 	got := backend.BuildArgs(cfg, "todo")
-	want := []string{"-p", "--output-format", "stream-json", "--verbose", "todo"}
+	want := []string{"-p", "--dangerously-skip-permissions", "--output-format", "stream-json", "--verbose", "todo"}
 	if len(got) != len(want) {
 		t.Fatalf("args length=%d, want %d: %v", len(got), len(want), got)
 	}
@@ -1885,14 +1803,12 @@ func TestBackendBuildArgs_ClaudeBackend(t *testing.T) {
 }
 
 func TestClaudeBackendBuildArgs_OutputValidation(t *testing.T) {
-	setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_SKIP_PERMISSIONS": "false"})
-	t.Cleanup(resetRuntimeSettingsForTest)
 	backend := ClaudeBackend{}
 	cfg := &Config{Mode: "resume"}
 	target := "ensure-flags"
 
 	args := backend.BuildArgs(cfg, target)
-	want := []string{"-p", "--output-format", "stream-json", "--verbose", target}
+	want := []string{"-p", "--dangerously-skip-permissions", "--output-format", "stream-json", "--verbose", target}
 	if len(args) != len(want) {
 		t.Fatalf("args length=%d, want %d: %v", len(args), len(want), args)
 	}
@@ -1971,19 +1887,16 @@ func TestRunResolveTimeout(t *testing.T) {
 		want   int
 	}{
 		{"empty env", "", 7200},
-		{"milliseconds", "7200000", 7200},
 		{"seconds", "3600", 3600},
+		{"large value", "7200000", 7200000},
 		{"invalid", "invalid", 7200},
 		{"negative", "-100", 7200},
 		{"zero", "0", 7200},
-		{"small milliseconds", "5000", 5000},
-		{"boundary", "10000", 10000},
-		{"above boundary", "10001", 10},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setRuntimeSettingsForTest(map[string]string{"CODEX_TIMEOUT": tt.envVal})
+			setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_TIMEOUT": tt.envVal})
 			t.Cleanup(resetRuntimeSettingsForTest)
 			got := resolveTimeout()
 			if got != tt.want {
@@ -3462,54 +3375,6 @@ noop`)
 	}
 }
 
-func TestVersionFlag(t *testing.T) {
-	defer resetTestHooks()
-	os.Args = []string{"code-router", "--version"}
-	output := captureOutput(t, func() {
-		if code := run(); code != 0 {
-			t.Errorf("exit = %d, want 0", code)
-		}
-	})
-
-	want := "code-router version 1.0.0\n"
-
-	if output != want {
-		t.Fatalf("output = %q, want %q", output, want)
-	}
-}
-
-func TestVersionShortFlag(t *testing.T) {
-	defer resetTestHooks()
-	os.Args = []string{"code-router", "-v"}
-	output := captureOutput(t, func() {
-		if code := run(); code != 0 {
-			t.Errorf("exit = %d, want 0", code)
-		}
-	})
-
-	want := "code-router version 1.0.0\n"
-
-	if output != want {
-		t.Fatalf("output = %q, want %q", output, want)
-	}
-}
-
-func TestVersionLegacyAlias(t *testing.T) {
-	defer resetTestHooks()
-	os.Args = []string{"code-router", "--version"}
-	output := captureOutput(t, func() {
-		if code := run(); code != 0 {
-			t.Errorf("exit = %d, want 0", code)
-		}
-	})
-
-	want := "code-router version 1.0.0\n"
-
-	if output != want {
-		t.Fatalf("output = %q, want %q", output, want)
-	}
-}
-
 func TestRun_Help(t *testing.T) {
 	defer resetTestHooks()
 	os.Args = []string{"code-router", "--help"}
@@ -3531,19 +3396,6 @@ func TestRun_HelpDoesNotTriggerCleanup(t *testing.T) {
 	os.Args = []string{"code-router", "--help"}
 	cleanupLogsFn = func() (CleanupStats, error) {
 		t.Fatalf("cleanup should not run for --help")
-		return CleanupStats{}, nil
-	}
-
-	if code := run(); code != 0 {
-		t.Fatalf("exit = %d, want 0", code)
-	}
-}
-
-func TestVersionDoesNotTriggerCleanup(t *testing.T) {
-	defer resetTestHooks()
-	os.Args = []string{"code-router", "--version"}
-	cleanupLogsFn = func() (CleanupStats, error) {
-		t.Fatalf("cleanup should not run for --version")
 		return CleanupStats{}, nil
 	}
 
@@ -3769,31 +3621,6 @@ do two`)
 		}
 	})
 
-	t.Run("parallelSkipPermissions", func(t *testing.T) {
-		defer resetTestHooks()
-		cleanupHook = func() {}
-		cleanupLogsFn = func() (CleanupStats, error) { return CleanupStats{}, nil }
-		setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_SKIP_PERMISSIONS": "false"})
-		t.Cleanup(resetRuntimeSettingsForTest)
-
-		runCodexTaskFn = func(task TaskSpec, timeout int) TaskResult {
-			if !task.SkipPermissions {
-				return TaskResult{TaskID: task.ID, ExitCode: 1, Error: "SkipPermissions not propagated"}
-			}
-			return TaskResult{TaskID: task.ID, ExitCode: 0, Message: "ok"}
-		}
-
-		stdinReader = strings.NewReader(`---TASK---
-id: only
-backend: claude
----CONTENT---
-do one`)
-		os.Args = []string{"code-router", "--parallel", "--backend", "codex", "--skip-permissions"}
-		if code := run(); code != 0 {
-			t.Fatalf("run exit = %d, want 0", code)
-		}
-	})
-
 	t.Run("parallelErrors", func(t *testing.T) {
 		defer resetTestHooks()
 		cleanupLogsFn = func() (CleanupStats, error) { return CleanupStats{}, nil }
@@ -3820,11 +3647,11 @@ task`)
 	})
 }
 
-func TestVersionMainWrapper(t *testing.T) {
+func TestMainWrapperHelp(t *testing.T) {
 	defer resetTestHooks()
 	exitCalled := -1
 	exitFn = func(code int) { exitCalled = code }
-	os.Args = []string{"code-router", "--version"}
+	os.Args = []string{"code-router", "--help"}
 	main()
 	if exitCalled != 0 {
 		t.Fatalf("main exit = %d, want 0", exitCalled)
@@ -4536,18 +4363,14 @@ func TestBackendRunCoverage(t *testing.T) {
 		{"NoArgs", TestRun_NoArgs},
 		{"CommandFails", TestRun_CommandFails},
 		{"CleanupHookAlwaysCalled", TestRun_CleanupHookAlwaysCalled},
-		{"VersionFlag", TestVersionFlag},
-		{"VersionShortFlag", TestVersionShortFlag},
-		{"VersionLegacyAlias", TestVersionLegacyAlias},
 		{"Help", TestRun_Help},
 		{"HelpShort", TestRun_HelpShort},
 		{"HelpDoesNotTriggerCleanup", TestRun_HelpDoesNotTriggerCleanup},
-		{"VersionDoesNotTriggerCleanup", TestVersionDoesNotTriggerCleanup},
 		{"VersionCoverageFullRun", TestVersionCoverageFullRun},
 		{"ExplicitStdinEmpty", TestRun_ExplicitStdinEmpty},
 		{"ExplicitStdinReadError", TestRun_ExplicitStdinReadError},
 		{"PipedTaskReadError", TestRun_PipedTaskReadError},
-		{"VersionMainWrapper", TestVersionMainWrapper},
+		{"MainWrapperHelp", TestMainWrapperHelp},
 	}
 
 	for _, tc := range suite {

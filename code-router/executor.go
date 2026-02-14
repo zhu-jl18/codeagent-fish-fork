@@ -759,13 +759,7 @@ func buildCodexArgs(cfg *Config, targetArg string) []string {
 
 	args := []string{"e"}
 
-	// Default to bypass sandbox unless CODEX_BYPASS_SANDBOX=false
-	if envFlagDefaultTrue("CODEX_BYPASS_SANDBOX") {
-		logWarn("CODEX_BYPASS_SANDBOX enabled: running without approval/sandbox protection")
-		args = append(args, "--dangerously-bypass-approvals-and-sandbox")
-	}
-
-	args = append(args, "--skip-git-repo-check")
+	args = append(args, "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check")
 
 	if isResume {
 		return append(args,
@@ -809,7 +803,6 @@ func runCodexTaskWithContext(parentCtx context.Context, taskSpec TaskSpec, backe
 		Task:            taskSpec.Task,
 		SessionID:       taskSpec.SessionID,
 		WorkDir:         taskSpec.WorkDir,
-		SkipPermissions: taskSpec.SkipPermissions,
 		Backend:         defaultBackendName,
 	}
 

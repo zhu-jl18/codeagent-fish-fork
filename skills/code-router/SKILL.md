@@ -53,7 +53,7 @@ code-router --backend gemini "simple task" [working_dir]
 - `task` (required)
   - Task description for the backend.
   - Supports inline text or stdin marker `-`.
-  - Supports `@file` references.
+  - Supports `@file` references (backend-native feature, not processed by wrapper).
 
 - `working_dir` (optional)
   - Working directory for new task execution.
@@ -289,11 +289,11 @@ EOF
 - Do not inject, override, or document environment variable values in this skill.
 - Treat wrapper-internal timeout as a very long fallback configured by the operator.
 - Control actual waiting budget via the host tool-call timeout.
-- Timeout tiers for Claude Code Bash calls:
-  - Simple tasks: `600000` ms (10 minutes) minimum.
-  - Normal tasks: `1800000` ms (30 minutes) recommended default.
-  - Complex Codex tasks: `7200000` ms (2 hours).
-- Do not use short timeouts like `300000` (5 minutes) for normal or complex tasks.
+- Timeout tiers for tool-call invocations:
+  - Simple tasks: `600` s (10 minutes) minimum.
+  - Normal tasks: `1800` s (30 minutes) recommended default.
+  - Complex Codex tasks: `7200` s (2 hours).
+- Do not use short timeouts like `300` s (5 minutes) for normal or complex tasks.
 
 Invocation Pattern:
 
@@ -304,7 +304,7 @@ Host-agnostic tool-call template (field names vary by runtime):
   code-router --backend <backend> - [working_dir] <<'EOF'
   <task content>
   EOF
-- timeout field (`timeout` / `timeout_ms` / equivalent): choose by tier (`600000` / `1800000` / `7200000`)
+- timeout field (`timeout` / `timeout_ms` / equivalent): choose by tier (`600` / `1800` / `7200`)
 - description field: optional
 
 Field names depend on the host tool schema.
@@ -326,7 +326,7 @@ Host-agnostic tool-call template (field names vary by runtime):
   ---CONTENT---
   task content
   EOF
-- timeout field (`timeout` / `timeout_ms` / equivalent): choose by tier (`600000` / `1800000` / `7200000`)
+- timeout field (`timeout` / `timeout_ms` / equivalent): choose by tier (`600` / `1800` / `7200`)
 - description field: optional
 
 Field names depend on the host tool schema.
@@ -341,26 +341,24 @@ Note: Global --backend is required; per-task backend is optional
 
 1. **Check task status via log file**:
    ```bash
-   # View real-time output
-   tail -f /tmp/claude/<workdir>/tasks/<task_id>.output
-
-   # Check if task is still running
-   cat /tmp/claude/<workdir>/tasks/<task_id>.output | tail -50
+   # Log path is printed to stderr at startup
+   # Format: $TMPDIR/code-router-{PID}[-{taskID}].log
+   tail -f "$TMPDIR"/code-router-*.log
    ```
 
 2. **Wait with tiered timeout (host-runtime API)**:
   - Use the host runtime's blocking wait API (for example: TaskOutput/wait-result equivalents).
   - Choose timeout by complexity:
-    - Simple: `600000` (10m)
-    - Normal: `1800000` (30m)
-    - Complex Codex: `7200000` (2h)
+    - Simple: `600` s (10m)
+    - Normal: `1800` s (30m)
+    - Complex Codex: `7200` s (2h)
   - If the wait call times out, do not kill the process; re-check logs/process and continue waiting.
 
-  - Concrete examples (if your host runtime supports `TaskOutput`):
+  - Pseudocode (adapt field names to your host runtime):
    ```text
-   TaskOutput(task_id="<id>", block=true, timeout=600000)
-   TaskOutput(task_id="<id>", block=true, timeout=1800000)
-   TaskOutput(task_id="<id>", block=true, timeout=7200000)
+   TaskOutput(task_id="<id>", block=true, timeout=600)
+   TaskOutput(task_id="<id>", block=true, timeout=1800)
+   TaskOutput(task_id="<id>", block=true, timeout=7200)
    ```
 
 3. **Check process without killing**:

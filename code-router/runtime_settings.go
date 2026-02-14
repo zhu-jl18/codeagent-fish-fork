@@ -154,15 +154,7 @@ func runtimeInjectedEnv() map[string]string {
 }
 
 func isWrapperControlKey(key string) bool {
-	if strings.HasPrefix(key, "CODE_ROUTER_") {
-		return true
-	}
-	switch key {
-	case "CODEX_TIMEOUT", "CODEX_BYPASS_SANDBOX":
-		return true
-	default:
-		return false
-	}
+	return strings.HasPrefix(key, "CODE_ROUTER_")
 }
 
 func setRuntimeSettingsForTest(values map[string]string) {

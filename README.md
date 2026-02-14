@@ -4,23 +4,20 @@
   <strong>中文</strong> | <a href="README.en.md">English</a>
 </p>
 
-这是从 `cexll/myclaude` **fork 并大幅裁剪**的个人版本：聚焦 `/dev` 工作流及其最小依赖组件。
+原始灵感以及部分代码来源 `cexll/myclaude`，特此感谢。
 
 你会得到什么（Key Concepts）：
-- `/dev` 工作流：需求澄清 → 计划 → 并行执行 → 验证
-- `code-router`：Go 写的执行器；统一 3 个后端 `codex/claude/gemini`；核心机制 `--parallel`
-- `product-requirements` skill：PRD 生成
+- `dev` commands or skill：需求澄清 → 计划 →选择后端 → 并行执行 → 验证
+- `code-router` executor and skill：Go 写的执行器；统一 3 个后端 `codex/claude/gemini`；核心机制 `--parallel` && `--resume`;配套使用guide(给ai看的)
 - `code-council` skill：多视角并行代码评审（2-3 个 AI reviewer 并行 + host agent 终审）
 
-## 后端定位（推荐）
+## 后端定位（仅推荐，可自由指定）
 
-- `codex`：默认实现后端（复杂逻辑、多文件改造、调试）
-- `claude`：快速修复、配置调整、文档整理
+- `codex`：复杂逻辑、bug修复、优化重构
+- `claude`：快速任务、review、补充分析
 - `gemini`：前端 UI/UX 原型、样式和交互细化
 - 调用入口约束：后端都只通过 `code-router` 调用；不要直接调用 `codex` / `claude` / `gemini` 命令。
 
-你不会得到什么：
-- upstream 里那套 agent 映射/复杂编排（已刻意移除）
 
 ## 安装（WSL2/Linux + macOS + Windows）
 
@@ -33,7 +30,7 @@ python3 install.py
 可选参数：
 ```bash
 python3 install.py --install-dir ~/.code-router --force
-python3 install.py --skip-wrapper
+python3 install.py --skip-router
 python3 install.py --repo zhu-jl18/code-router --release-tag latest
 ```
 
@@ -49,8 +46,8 @@ python3 install.py --repo zhu-jl18/code-router --release-tag latest
   - **/dev command（Claude Code 等）**：使用 `dev-workflow/commands/dev.md` 与 `dev-workflow/agents/*`
 
 提示：
-- 在 WSL 里运行 `install.py` 会安装 Linux wrapper；在 macOS（Apple Silicon）里运行会安装 Darwin arm64 wrapper；在 Windows 里运行会安装 Windows `.exe`。
-- 需要网络访问 GitHub Release；如只想更新配置文件，使用 `--skip-wrapper`。
+- 在 WSL 里运行 `install.py` 会安装 Linux 二进制；在 macOS（Apple Silicon）里运行会安装 Darwin arm64 二进制；在 Windows 里运行会安装 Windows `.exe`。
+- 需要网络访问 GitHub Release；如只想更新配置文件，使用 `--skip-router`。
 
 ## 本地构建（可选）
 
@@ -71,7 +68,7 @@ bash scripts/build-dist.sh
 - `~/.code-router/prompts/gemini-prompt.md`
 
 规则：
-- wrapper 会读取对应后端的 prompt 文件；只有在内容非空时才会 prepend 到任务前面
+- code-router 会读取对应后端的 prompt 文件；只有在内容非空时才会 prepend 到任务前面
 - 文件不存在 / 只有空白字符：等价“无注入”
 
 运行时配置（审批/绕过、超时、并行传播规则）详见：
@@ -82,11 +79,6 @@ bash scripts/build-dist.sh
 在 Claude Code 里：
 ```text
 /dev "实现 X"
-```
-
-PRD：
-```text
-/product-requirements "为功能 X 写 PRD"
 ```
 
 代码评审：

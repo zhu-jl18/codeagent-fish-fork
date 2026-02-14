@@ -11,20 +11,17 @@ import (
 )
 
 func resolveTimeout() int {
-	raw := getEnv("CODEX_TIMEOUT", "")
+	raw := getEnv("CODE_ROUTER_TIMEOUT", "")
 	if raw == "" {
 		return defaultTimeout
 	}
 
 	parsed, err := strconv.Atoi(raw)
 	if err != nil || parsed <= 0 {
-		logWarn(fmt.Sprintf("Invalid CODEX_TIMEOUT '%s', falling back to %ds", raw, defaultTimeout))
+		logWarn(fmt.Sprintf("Invalid CODE_ROUTER_TIMEOUT '%s', falling back to %ds", raw, defaultTimeout))
 		return defaultTimeout
 	}
 
-	if parsed > 10000 {
-		return parsed / 1000
-	}
 	return parsed
 }
 

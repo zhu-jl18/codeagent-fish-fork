@@ -46,8 +46,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Overwrite existing files",
     )
     p.add_argument(
-        "--skip-wrapper",
-        "--skip-build",
+        "--skip-router",
         action="store_true",
         help="Skip installing code-router binary (only install runtime config/assets)",
     )
@@ -76,27 +75,21 @@ def _write_if_missing(path: Path, content: str, *, force: bool) -> None:
 
 
 def _install_prompts(install_dir: Path, *, force: bool) -> None:
-    wrapper_dir = install_dir / "prompts"
-    _ensure_dir(wrapper_dir)
+    prompts_dir = install_dir / "prompts"
+    _ensure_dir(prompts_dir)
     for backend in BACKENDS:
-        _write_if_missing(wrapper_dir / f"{backend}-prompt.md", "", force=force)
+        _write_if_missing(prompts_dir / f"{backend}-prompt.md", "", force=force)
 
 
 def _install_env_template(install_dir: Path, *, force: bool) -> None:
     env_template = (
         "# code-router runtime config\n"
         "# Values are loaded only from this file.\n\n"
-        "# CODEX_TIMEOUT in milliseconds (default: 7200000)\n"
-        "CODEX_TIMEOUT=7200000\n\n"
-        "# true/false controls\n"
-        "CODEX_BYPASS_SANDBOX=true\n"
-        "CODE_ROUTER_SKIP_PERMISSIONS=true\n"
+        "# CODE_ROUTER_TIMEOUT in seconds (default: 7200)\n"
+        "CODE_ROUTER_TIMEOUT=7200\n\n"
         "CODE_ROUTER_ASCII_MODE=false\n"
         "CODE_ROUTER_MAX_PARALLEL_WORKERS=0\n"
-        "CODE_ROUTER_LOGGER_CLOSE_TIMEOUT_MS=5000\n\n"
-        "# backend credentials (examples)\n"
-        "# ANTHROPIC_API_KEY=\n"
-        "# GEMINI_API_KEY=\n"
+        "CODE_ROUTER_LOGGER_CLOSE_TIMEOUT_MS=5000\n"
     )
     _write_if_missing(install_dir / ".env", env_template, force=force)
 
@@ -191,7 +184,7 @@ def _download_to_path(url: str, out: Path) -> None:
             tmp.unlink(missing_ok=True)
 
 
-def _install_wrapper_from_release(install_dir: Path, *, repo: str, tag: str, force: bool) -> Path:
+def _install_router_from_release(install_dir: Path, *, repo: str, tag: str, force: bool) -> Path:
     bin_dir = install_dir / "bin"
     _ensure_dir(bin_dir)
     exe_name = "code-router.exe" if os.name == "nt" else "code-router"
@@ -272,10 +265,10 @@ def main(argv: list[str] | None = None) -> int:
     _install_prompts(install_dir, force=args.force)
     _install_env_template(install_dir, force=args.force)
 
-    wrapper_path: Path | None = None
-    if not args.skip_wrapper:
+    router_path: Path | None = None
+    if not args.skip_router:
         try:
-            wrapper_path = _install_wrapper_from_release(
+            router_path = _install_router_from_release(
                 install_dir,
                 repo=args.repo,
                 tag=args.release_tag,
@@ -283,21 +276,21 @@ def main(argv: list[str] | None = None) -> int:
             )
         except (FileNotFoundError, RuntimeError) as e:
             print(f"ERROR: {e}", file=sys.stderr)
-            print("Hint: verify network access and release assets, or use --skip-wrapper to install config only.", file=sys.stderr)
+            print("Hint: verify network access and release assets, or use --skip-router to install config only.", file=sys.stderr)
             return 1
 
     print(f"Installed to: {install_dir}")
     print(f"- env:      {install_dir / '.env'}")
     print(f"- prompts:  {install_dir / 'prompts'} (*-prompt.md placeholders)")
-    if wrapper_path is not None:
-        print(f"- wrapper:  {wrapper_path} (downloaded from GitHub release {args.repo}@{args.release_tag})")
+    if router_path is not None:
+        print(f"- binary:   {router_path} (downloaded from GitHub release {args.repo}@{args.release_tag})")
 
     print("")
     print("Manual setup required:")
     print("- Copy dev/skill markdown files manually into each target CLI root or project scope as needed.")
     print("- This installer does not auto-copy skills/commands/agents into Claude/Codex/iFlow/Amp roots.")
 
-    if wrapper_path is not None:
+    if router_path is not None:
         _print_path_hint(install_dir / "bin")
 
     return 0

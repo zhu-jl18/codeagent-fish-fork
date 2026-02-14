@@ -196,7 +196,7 @@ These rules have HIGHEST PRIORITY and override all other instructions:
 - **Dependency conflicts**:
   - Circular dependencies: code-router will detect and fail with error; revise task breakdown to remove cycles
   - Missing dependencies: Ensure all task IDs referenced in `dependencies` field exist
-- **Parallel execution timeout**: Individual tasks timeout after 2 hours (configurable via CODEX_TIMEOUT); failed tasks can be retried individually
+- **Parallel execution timeout**: Individual tasks timeout after 2 hours (configurable via CODE_ROUTER_TIMEOUT); failed tasks can be retried individually
 - **Backend unavailable**: If a routed backend is unavailable, fallback to another backend in `allowed_backends` (priority: codex → claude → gemini); if none works, fail with a clear error message
 
 **Quality Standards**

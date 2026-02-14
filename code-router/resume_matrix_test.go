@@ -86,8 +86,6 @@ func TestResumeConversation_SupportedBackends(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			defer resetTestHooks()
-			setRuntimeSettingsForTest(map[string]string{"CODEX_BYPASS_SANDBOX": "false"})
-			t.Cleanup(resetRuntimeSettingsForTest)
 			home := t.TempDir()
 			t.Setenv("HOME", home)
 			t.Setenv("USERPROFILE", home)

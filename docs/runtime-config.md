@@ -2,7 +2,6 @@
 
 This document is the single source of truth for runtime behavior related to:
 
-- approval / bypass flags per backend
 - timeout behavior
 - parallel-mode propagation rules
 - config loading model
@@ -17,38 +16,19 @@ All runtime options are loaded from:
 
 The wrapper does not read these control options from shell environment variables anymore.
 
-## 2) Backend Approval/Bypass Matrix
+## 2) Backend Approval/Bypass
 
-| Backend | Wrapper-added flag | Default behavior | Disable/Change path |
-|---|---|---|---|
-| `codex` | `--dangerously-bypass-approvals-and-sandbox` | enabled by default | set `CODEX_BYPASS_SANDBOX=false` in `.env` |
-| `claude` | `--dangerously-skip-permissions` | enabled by default | set `CODE_ROUTER_SKIP_PERMISSIONS=false` in `.env` |
-| `gemini` | `-y` (`--yolo`) | always enabled in current wrapper | no wrapper toggle currently |
+All backends run with approval bypass hardcoded (no toggle):
 
-Notes:
-
-- true-like values: `1`, `true`, `yes`, `on`.
-- false-like values: `0`, `false`, `no`, `off`.
+- `codex`: `--dangerously-bypass-approvals-and-sandbox`
+- `claude`: `--dangerously-skip-permissions`
+- `gemini`: `-y`
 
 ## 3) Runtime Keys in `.env`
 
-### Approval/Bypass Controls
-
-- `CODEX_BYPASS_SANDBOX` (codex only)
-  - unset/true => wrapper appends codex dangerous bypass flag
-  - false => wrapper does not append codex dangerous bypass flag
-
-- `CODE_ROUTER_SKIP_PERMISSIONS` (claude)
-  - unset/true => claude appends `--dangerously-skip-permissions`
-  - false => claude keeps permission prompts
-
-### Runtime Controls
-
-- `CODEX_TIMEOUT`
-  - default: `7200000` (2 hours)
-  - parser behavior:
-    - value `>10000` => treated as milliseconds, converted to seconds
-    - value `<=10000` => treated as seconds
+- `CODE_ROUTER_TIMEOUT`
+  - default: `7200` (seconds, 2 hours)
+  - unit: seconds
 
 - `CODE_ROUTER_MAX_PARALLEL_WORKERS`
   - default: unlimited (`0`)
@@ -73,28 +53,16 @@ Prompt files are resolved from:
 
 Supported backends: `codex`, `claude`, `gemini`.
 
-## 4) Parallel Propagation Rule (`skip_permissions`)
-
-Parallel mode computes a global skip-permissions value from CLI/.env, then applies:
-
-```text
-effective_task_skip = task.skip_permissions OR global_skip_permissions
-```
-
-Implication:
-
-- If global skip-permissions is true, a task cannot force it back to false.
-
-## 5) Timeout Layering (Important)
+## 4) Timeout Layering (Important)
 
 There are usually two timeout layers:
 
 - outer caller timeout (e.g., tool invocation timeout)
-- wrapper timeout (`CODEX_TIMEOUT` from `.env`)
+- wrapper timeout (`CODE_ROUTER_TIMEOUT` from `.env`)
 
 Effective timeout is whichever triggers first.
 
-## 6) Editing Config
+## 5) Editing Config
 
 Edit the file directly:
 

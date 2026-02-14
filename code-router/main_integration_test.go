@@ -623,7 +623,7 @@ func TestRunParallelTimeoutPropagation(t *testing.T) {
 		return TaskResult{TaskID: task.ID, ExitCode: 124, Error: "timeout"}
 	}
 
-	setRuntimeSettingsForTest(map[string]string{"CODEX_TIMEOUT": "1"})
+	setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_TIMEOUT": "1"})
 	t.Cleanup(resetRuntimeSettingsForTest)
 	input := `---TASK---
 id: T

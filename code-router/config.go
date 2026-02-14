@@ -18,7 +18,6 @@ type Config struct {
 	ExplicitStdin      bool
 	Timeout            int
 	Backend            string
-	SkipPermissions    bool
 	MaxParallelWorkers int
 }
 
@@ -36,7 +35,6 @@ type TaskSpec struct {
 	Dependencies    []string        `json:"dependencies,omitempty"`
 	SessionID       string          `json:"session_id,omitempty"`
 	Backend         string          `json:"backend,omitempty"`
-	SkipPermissions bool            `json:"skip_permissions,omitempty"`
 	Mode            string          `json:"-"`
 	UseStdin        bool            `json:"-"`
 	Context         context.Context `json:"-"`
@@ -104,15 +102,6 @@ func parseBoolFlag(val string, defaultValue bool) bool {
 	}
 }
 
-// envFlagDefaultTrue returns true unless the env var is explicitly set to false/0/no/off.
-func envFlagDefaultTrue(key string) bool {
-	val, ok := lookupRuntimeSetting(key)
-	if !ok {
-		return true
-	}
-	return parseBoolFlag(val, true)
-}
-
 func parseParallelConfig(data []byte) (*ParallelConfig, error) {
 	trimmed := bytes.TrimSpace(data)
 	if len(trimmed) == 0 {
@@ -166,12 +155,6 @@ func parseParallelConfig(data []byte) (*ParallelConfig, error) {
 				task.Mode = "resume"
 			case "backend":
 				task.Backend = value
-			case "skip_permissions", "skip-permissions":
-				if value == "" {
-					task.SkipPermissions = true
-					continue
-				}
-				task.SkipPermissions = parseBoolFlag(value, false)
 			case "dependencies":
 				for _, dep := range strings.Split(value, ",") {
 					dep = strings.TrimSpace(dep)
@@ -221,7 +204,6 @@ func parseArgs() (*Config, error) {
 
 	backendName := ""
 	backendSpecified := false
-	skipPermissions := envFlagEnabled("CODE_ROUTER_SKIP_PERMISSIONS")
 	filtered := make([]string, 0, len(args))
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
@@ -251,15 +233,6 @@ func parseArgs() (*Config, error) {
 			backendName = value
 			backendSpecified = true
 			continue
-		case arg == "--skip-permissions", arg == "--dangerously-skip-permissions":
-			skipPermissions = true
-			continue
-		case strings.HasPrefix(arg, "--skip-permissions="):
-			skipPermissions = parseBoolFlag(strings.TrimPrefix(arg, "--skip-permissions="), skipPermissions)
-			continue
-		case strings.HasPrefix(arg, "--dangerously-skip-permissions="):
-			skipPermissions = parseBoolFlag(strings.TrimPrefix(arg, "--dangerously-skip-permissions="), skipPermissions)
-			continue
 		}
 		if strings.HasPrefix(arg, "--") {
 			return nil, fmt.Errorf("unknown flag: %s", arg)
@@ -275,7 +248,7 @@ func parseArgs() (*Config, error) {
 	}
 	args = filtered
 
-	cfg := &Config{WorkDir: defaultWorkdir, Backend: backendName, SkipPermissions: skipPermissions}
+	cfg := &Config{WorkDir: defaultWorkdir, Backend: backendName}
 	cfg.MaxParallelWorkers = resolveMaxParallelWorkers()
 
 	if args[0] == "resume" {

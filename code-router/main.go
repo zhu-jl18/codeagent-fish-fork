@@ -14,7 +14,6 @@ import (
 )
 
 const (
-	version               = "1.0.0"
 	defaultWorkdir        = "."
 	defaultTimeout        = 7200 // seconds (2 hours)
 	defaultCoverageTarget = 90.0
@@ -112,12 +111,9 @@ func main() {
 // run is the main logic, returns exit code for testability
 func run() (exitCode int) {
 	name := currentWrapperName()
-	// Handle --version and --help first (no logger needed)
+	// Handle --help first (no logger needed)
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
-		case "--version", "-v":
-			fmt.Printf("%s version %s\n", name, version)
-			return 0
 		case "--help", "-h":
 			printHelp()
 			return 0
@@ -178,7 +174,6 @@ func run() (exitCode int) {
 			backendName := ""
 			backendSpecified := false
 			fullOutput := false
-			skipPermissions := envFlagEnabled("CODE_ROUTER_SKIP_PERMISSIONS")
 			var extras []string
 
 			for i := 0; i < len(args); i++ {
@@ -209,19 +204,13 @@ func run() (exitCode int) {
 					}
 					backendName = value
 					backendSpecified = true
-				case arg == "--skip-permissions", arg == "--dangerously-skip-permissions":
-					skipPermissions = true
-				case strings.HasPrefix(arg, "--skip-permissions="):
-					skipPermissions = parseBoolFlag(strings.TrimPrefix(arg, "--skip-permissions="), skipPermissions)
-				case strings.HasPrefix(arg, "--dangerously-skip-permissions="):
-					skipPermissions = parseBoolFlag(strings.TrimPrefix(arg, "--dangerously-skip-permissions="), skipPermissions)
 				default:
 					extras = append(extras, arg)
 				}
 			}
 
 			if len(extras) > 0 {
-				fmt.Fprintln(os.Stderr, "ERROR: --parallel reads its task configuration from stdin; only --backend, --full-output and --skip-permissions are allowed.")
+				fmt.Fprintln(os.Stderr, "ERROR: --parallel reads its task configuration from stdin; only --backend and --full-output are allowed.")
 				fmt.Fprintln(os.Stderr, "Usage examples:")
 				fmt.Fprintf(os.Stderr, "  %s --parallel --backend codex < tasks.txt\n", name)
 				fmt.Fprintf(os.Stderr, "  echo '...' | %s --parallel --backend claude\n", name)
@@ -261,7 +250,6 @@ func run() (exitCode int) {
 				if strings.TrimSpace(cfg.Tasks[i].Backend) == "" {
 					cfg.Tasks[i].Backend = backendName
 				}
-				cfg.Tasks[i].SkipPermissions = cfg.Tasks[i].SkipPermissions || skipPermissions
 			}
 
 			timeoutSec := resolveTimeout()
@@ -439,12 +427,11 @@ func run() (exitCode int) {
 	logInfo(fmt.Sprintf("%s running...", cfg.Backend))
 
 	taskSpec := TaskSpec{
-		Task:            taskText,
-		WorkDir:         cfg.WorkDir,
-		Mode:            cfg.Mode,
-		SessionID:       cfg.SessionID,
-		SkipPermissions: cfg.SkipPermissions,
-		UseStdin:        useStdin,
+		Task:      taskText,
+		WorkDir:   cfg.WorkDir,
+		Mode:      cfg.Mode,
+		SessionID: cfg.SessionID,
+		UseStdin:  useStdin,
 	}
 
 	result := runTaskFn(taskSpec, false, cfg.Timeout)
@@ -593,7 +580,6 @@ Usage:
 	%[1]s --backend <backend> resume <session_id> -     Read follow-up task from stdin
 	%[1]s --parallel --backend <backend>               Run tasks in parallel (config from stdin)
 	%[1]s --parallel --backend <backend> --full-output Run tasks in parallel with full output (legacy)
-	%[1]s --version
 	%[1]s --help
 
 Supported backends:
@@ -616,8 +602,7 @@ Parallel mode examples:
 
 	Runtime Config:
 	    ~/.code-router/.env (single source of truth)
-	    Supported keys include: CODEX_TIMEOUT, CODEX_BYPASS_SANDBOX,
-	    CODE_ROUTER_SKIP_PERMISSIONS, CODE_ROUTER_ASCII_MODE,
+	    Supported keys include: CODE_ROUTER_TIMEOUT, CODE_ROUTER_ASCII_MODE,
 	    CODE_ROUTER_MAX_PARALLEL_WORKERS, CODE_ROUTER_LOGGER_CLOSE_TIMEOUT_MS
 
 Exit Codes:

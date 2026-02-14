@@ -8,19 +8,17 @@ import (
 func TestClaudeBuildArgs_ModesAndPermissions(t *testing.T) {
 	backend := ClaudeBackend{}
 
-	t.Run("new mode omits skip-permissions when env disabled", func(t *testing.T) {
-		setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_SKIP_PERMISSIONS": "false"})
-		t.Cleanup(resetRuntimeSettingsForTest)
+	t.Run("new mode always includes skip-permissions", func(t *testing.T) {
 		cfg := &Config{Mode: "new", WorkDir: "/repo"}
 		got := backend.BuildArgs(cfg, "todo")
-		want := []string{"-p", "--output-format", "stream-json", "--verbose", "todo"}
+		want := []string{"-p", "--dangerously-skip-permissions", "--output-format", "stream-json", "--verbose", "todo"}
 		if !reflect.DeepEqual(got, want) {
 			t.Fatalf("got %v, want %v", got, want)
 		}
 	})
 
-	t.Run("new mode includes skip-permissions by default", func(t *testing.T) {
-		cfg := &Config{Mode: "new", SkipPermissions: false}
+	t.Run("stdin mode", func(t *testing.T) {
+		cfg := &Config{Mode: "new", WorkDir: "/repo"}
 		got := backend.BuildArgs(cfg, "-")
 		want := []string{"-p", "--dangerously-skip-permissions", "--output-format", "stream-json", "--verbose", "-"}
 		if !reflect.DeepEqual(got, want) {
@@ -29,31 +27,18 @@ func TestClaudeBuildArgs_ModesAndPermissions(t *testing.T) {
 	})
 
 	t.Run("resume mode includes session id", func(t *testing.T) {
-		setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_SKIP_PERMISSIONS": "false"})
-		t.Cleanup(resetRuntimeSettingsForTest)
 		cfg := &Config{Mode: "resume", SessionID: "sid-123", WorkDir: "/ignored"}
 		got := backend.BuildArgs(cfg, "resume-task")
-		want := []string{"-p", "-r", "sid-123", "--output-format", "stream-json", "--verbose", "resume-task"}
+		want := []string{"-p", "--dangerously-skip-permissions", "-r", "sid-123", "--output-format", "stream-json", "--verbose", "resume-task"}
 		if !reflect.DeepEqual(got, want) {
 			t.Fatalf("got %v, want %v", got, want)
 		}
 	})
 
 	t.Run("resume mode without session still returns base flags", func(t *testing.T) {
-		setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_SKIP_PERMISSIONS": "false"})
-		t.Cleanup(resetRuntimeSettingsForTest)
 		cfg := &Config{Mode: "resume", WorkDir: "/ignored"}
 		got := backend.BuildArgs(cfg, "follow-up")
-		want := []string{"-p", "--output-format", "stream-json", "--verbose", "follow-up"}
-		if !reflect.DeepEqual(got, want) {
-			t.Fatalf("got %v, want %v", got, want)
-		}
-	})
-
-	t.Run("resume mode can opt-in skip permissions", func(t *testing.T) {
-		cfg := &Config{Mode: "resume", SessionID: "sid-123", SkipPermissions: true}
-		got := backend.BuildArgs(cfg, "resume-task")
-		want := []string{"-p", "--dangerously-skip-permissions", "-r", "sid-123", "--output-format", "stream-json", "--verbose", "resume-task"}
+		want := []string{"-p", "--dangerously-skip-permissions", "--output-format", "stream-json", "--verbose", "follow-up"}
 		if !reflect.DeepEqual(got, want) {
 			t.Fatalf("got %v, want %v", got, want)
 		}
@@ -114,23 +99,7 @@ func TestVariousBackendsBuildArgs(t *testing.T) {
 		}
 	})
 
-	t.Run("codex build args omits bypass flag by default", func(t *testing.T) {
-		setRuntimeSettingsForTest(map[string]string{"CODEX_BYPASS_SANDBOX": "false"})
-		t.Cleanup(resetRuntimeSettingsForTest)
-
-		backend := CodexBackend{}
-		cfg := &Config{Mode: "new", WorkDir: "/tmp"}
-		got := backend.BuildArgs(cfg, "task")
-		want := []string{"e", "--skip-git-repo-check", "-C", "/tmp", "--json", "task"}
-		if !reflect.DeepEqual(got, want) {
-			t.Fatalf("got %v, want %v", got, want)
-		}
-	})
-
-	t.Run("codex build args includes bypass flag when enabled", func(t *testing.T) {
-		setRuntimeSettingsForTest(map[string]string{"CODEX_BYPASS_SANDBOX": "true"})
-		t.Cleanup(resetRuntimeSettingsForTest)
-
+	t.Run("codex build args always includes bypass flag", func(t *testing.T) {
 		backend := CodexBackend{}
 		cfg := &Config{Mode: "new", WorkDir: "/tmp"}
 		got := backend.BuildArgs(cfg, "task")
@@ -175,7 +144,7 @@ func TestRuntimeEnvForBackend(t *testing.T) {
 	t.Run("filters wrapper control keys", func(t *testing.T) {
 		setRuntimeSettingsForTest(map[string]string{
 			"CODE_ROUTER_SKIP_PERMISSIONS": "false",
-			"CODEX_TIMEOUT":                "7200000",
+			"CODE_ROUTER_TIMEOUT":          "7200",
 			"ANTHROPIC_API_KEY":            "secret",
 			"FOO":                          "bar",
 		})
@@ -185,8 +154,8 @@ func TestRuntimeEnvForBackend(t *testing.T) {
 		if got["ANTHROPIC_API_KEY"] != "secret" || got["FOO"] != "bar" {
 			t.Fatalf("got %v, want ANTHROPIC_API_KEY/FOO", got)
 		}
-		if _, ok := got["CODEX_TIMEOUT"]; ok {
-			t.Fatalf("got %v, control key CODEX_TIMEOUT should be filtered", got)
+		if _, ok := got["CODE_ROUTER_TIMEOUT"]; ok {
+			t.Fatalf("got %v, control key CODE_ROUTER_TIMEOUT should be filtered", got)
 		}
 		if _, ok := got["CODE_ROUTER_SKIP_PERMISSIONS"]; ok {
 			t.Fatalf("got %v, control key CODE_ROUTER_SKIP_PERMISSIONS should be filtered", got)
