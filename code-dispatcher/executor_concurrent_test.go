@@ -310,7 +310,7 @@ func TestExecutorHelperCoverage(t *testing.T) {
 	})
 
 	t.Run("generateFinalOutputASCIIMode", func(t *testing.T) {
-		setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_ASCII_MODE": "true"})
+		setRuntimeSettingsForTest(map[string]string{"CODE_DISPATCHER_ASCII_MODE": "true"})
 		t.Cleanup(resetRuntimeSettingsForTest)
 
 		results := []TaskResult{
@@ -333,7 +333,7 @@ func TestExecutorHelperCoverage(t *testing.T) {
 	})
 
 	t.Run("generateFinalOutputUnicodeMode", func(t *testing.T) {
-		setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_ASCII_MODE": "false"})
+		setRuntimeSettingsForTest(map[string]string{"CODE_DISPATCHER_ASCII_MODE": "false"})
 		t.Cleanup(resetRuntimeSettingsForTest)
 
 		results := []TaskResult{
@@ -356,7 +356,7 @@ func TestExecutorHelperCoverage(t *testing.T) {
 		runParallelTaskFn = func(task TaskSpec, timeout int) TaskResult {
 			return TaskResult{TaskID: task.ID, ExitCode: 0, Message: "done"}
 		}
-		setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_MAX_PARALLEL_WORKERS": "1"})
+		setRuntimeSettingsForTest(map[string]string{"CODE_DISPATCHER_MAX_PARALLEL_WORKERS": "1"})
 		t.Cleanup(resetRuntimeSettingsForTest)
 
 		results := executeConcurrent([][]TaskSpec{{{ID: "wrap"}}}, 1)
@@ -747,7 +747,7 @@ func TestConcurrentExecutorParallelLogIsolationAndClosure(t *testing.T) {
 	t.Setenv("TMPDIR", tempDir)
 
 	oldArgs := os.Args
-	os.Args = []string{defaultRouterName}
+	os.Args = []string{defaultDispatcherName}
 	t.Cleanup(func() { os.Args = oldArgs })
 
 	mainLogger, err := NewLoggerWithSuffix("concurrent-main")

@@ -1,17 +1,17 @@
 ---
-name: code-router
-description: Execute code-router for multi-backend AI code tasks. Supports Codex, Claude, Gemini, with file references (@syntax) and structured output.
+name: code-dispatcher
+description: Execute code-dispatcher for multi-backend AI code tasks. Supports Codex, Claude, Gemini, with file references (@syntax) and structured output.
 ---
 
-# code-router Integration
+# code-dispatcher Integration
 
 ## Overview
 
-Execute code-router commands with pluggable AI backends (Codex, Claude, Gemini). Supports file references via `@` syntax, parallel task execution with backend selection, and configurable security controls.
+Execute code-dispatcher commands with pluggable AI backends (Codex, Claude, Gemini). Supports file references via `@` syntax, parallel task execution with backend selection, and configurable security controls.
 
 ## When to Use
 
-When the user explicitly requests a specific backend (Codex, Claude, or Gemini), mentions code-router, or when a skill or command definition explicitly declares a dependency on this skill.
+When the user explicitly requests a specific backend (Codex, Claude, or Gemini), mentions code-dispatcher, or when a skill or command definition explicitly declares a dependency on this skill.
 
 Applicable scenarios include but are not limited to:
 - Complex code analysis requiring deep understanding
@@ -23,26 +23,26 @@ Applicable scenarios include but are not limited to:
 
 **1) Standard invocation: HEREDOC syntax (recommended)**
 ```bash
-code-router --backend codex - [working_dir] <<'EOF'
+code-dispatcher --backend codex - [working_dir] <<'EOF'
 <task content here>
 EOF
 ```
 
 **2) Single-line tasks (no heredoc)**
 ```bash
-code-router --backend codex "simple task" [working_dir]
-code-router --backend claude "simple task" [working_dir]
-code-router --backend gemini "simple task" [working_dir]
+code-dispatcher --backend codex "simple task" [working_dir]
+code-dispatcher --backend claude "simple task" [working_dir]
+code-dispatcher --backend gemini "simple task" [working_dir]
 ```
 
 ## Common Parameters
 
 - Command notation and positional order
   - `[]` means optional. Do not type brackets literally.
-  - Inline task: `code-router --backend <backend> "<task>" [working_dir]` — task text is passed in command args; best for short one-line prompts.
-  - Stdin task: `code-router --backend <backend> - [working_dir]` — task text is read from stdin (`<<'EOF'`/pipe); best for multi-line or complex content.
+  - Inline task: `code-dispatcher --backend <backend> "<task>" [working_dir]` — task text is passed in command args; best for short one-line prompts.
+  - Stdin task: `code-dispatcher --backend <backend> - [working_dir]` — task text is read from stdin (`<<'EOF'`/pipe); best for multi-line or complex content.
   - These two forms are for new-task commands only.
-  - Resume uses its own forms: inline `code-router --backend <backend> resume <session_id> "<follow-up task>"` and stdin `code-router --backend <backend> resume <session_id> -`.
+  - Resume uses its own forms: inline `code-dispatcher --backend <backend> resume <session_id> "<follow-up task>"` and stdin `code-dispatcher --backend <backend> resume <session_id> -`.
 
 - `--backend <backend>` (required)
   - Select backend explicitly: `codex | claude | gemini`.
@@ -119,19 +119,19 @@ Supported backends all support resume mode: `codex | claude | gemini`.
 
 **1) Standard resume (HEREDOC)**
 ```bash
-code-router --backend codex resume <session_id> - <<'EOF'
+code-dispatcher --backend codex resume <session_id> - <<'EOF'
 <follow-up task>
 EOF
 ```
 
 **2) Single-line resume (no heredoc)**
 ```bash
-code-router --backend claude resume <session_id> "follow-up task"
+code-dispatcher --backend claude resume <session_id> "follow-up task"
 ```
 
 **3) Parallel resume (supported)**
 ```bash
-code-router --parallel --backend codex <<'EOF'
+code-dispatcher --parallel --backend codex <<'EOF'
 ---TASK---
 id: resume-a
 backend: claude
@@ -150,7 +150,7 @@ Resume mode relies on backend session context.
 
  Resume identifier contract:
 - Use the wrapper-returned `SESSION_ID` as the source of truth for follow-up resume commands.
-- Standard form: `code-router --backend <backend> resume <SESSION_ID> ...`.
+- Standard form: `code-dispatcher --backend <backend> resume <SESSION_ID> ...`.
 
 
 ## Parallel Mode (`--parallel`)
@@ -164,7 +164,7 @@ Resume mode relies on backend session context.
 
 **1) Basic parallel (independent tasks, global backend fallback)**
 ```bash
-code-router --parallel --backend codex <<'EOF'
+code-dispatcher --parallel --backend codex <<'EOF'
 ---TASK---
 id: scan-api
 ---CONTENT---
@@ -179,7 +179,7 @@ EOF
 
 **2) Parallel with per-task backend override (mixed backends)**
 ```bash
-code-router --parallel --backend codex <<'EOF'
+code-dispatcher --parallel --backend codex <<'EOF'
 ---TASK---
 id: analyze
 ---CONTENT---
@@ -203,7 +203,7 @@ Output styles in parallel mode:
 
 **1) Summary mode (default, no flag)**
 ```bash
-code-router --parallel --backend codex <<'EOF'
+code-dispatcher --parallel --backend codex <<'EOF'
 ---TASK---
 id: t1
 ---CONTENT---
@@ -213,7 +213,7 @@ EOF
 
 **2) Full mode (`--full-output`)**, mainly for debugging failures or when full per-task messages are required.
 ```bash
-code-router --parallel --backend codex --full-output <<'EOF'
+code-dispatcher --parallel --backend codex --full-output <<'EOF'
 ---TASK---
 id: t1
 ---CONTENT---
@@ -241,7 +241,7 @@ layer 2:      task3
 
 **1) Dependency scheduling (DAG with mixed backends)**
 ```bash
-code-router --parallel --backend codex <<'EOF'
+code-dispatcher --parallel --backend codex <<'EOF'
 ---TASK---
 id: task1
 workdir: /path/to/dir
@@ -266,7 +266,7 @@ EOF
 
 **2) Minimal DAG example (annotated)**
 ```bash
-code-router --parallel --backend codex <<'EOF'
+code-dispatcher --parallel --backend codex <<'EOF'
 ---TASK---
 id: prep
 # uses global backend codex
@@ -301,7 +301,7 @@ Invocation Pattern:
 ```
 Host-agnostic tool-call template (field names vary by runtime):
 - command payload (`command` or `cmd`):
-  code-router --backend <backend> - [working_dir] <<'EOF'
+  code-dispatcher --backend <backend> - [working_dir] <<'EOF'
   <task content>
   EOF
 - timeout field (`timeout` / `timeout_ms` / equivalent): choose by tier (`600` / `1800` / `7200`)
@@ -317,7 +317,7 @@ Note: `--backend` is required; supported values: `codex | claude | gemini`
 ```
 Host-agnostic tool-call template (field names vary by runtime):
 - command payload (`command` or `cmd`):
-  code-router --parallel --backend <backend> <<'EOF'
+  code-dispatcher --parallel --backend <backend> <<'EOF'
   ---TASK---
   id: task_id
   backend: <backend>  # Optional, overrides global
@@ -337,13 +337,13 @@ Note: Global --backend is required; per-task backend is optional
 
 ## Critical Rules
 
-**NEVER kill code-router processes by default.** Long-running tasks are normal. Instead:
+**NEVER kill code-dispatcher processes by default.** Long-running tasks are normal. Instead:
 
 1. **Check task status via log file**:
    ```bash
    # Log path is printed to stderr at startup
-   # Format: $TMPDIR/code-router-{PID}[-{taskID}].log
-   tail -f "$TMPDIR"/code-router-*.log
+   # Format: $TMPDIR/code-dispatcher-{PID}[-{taskID}].log
+   tail -f "$TMPDIR"/code-dispatcher-*.log
    ```
 
 2. **Wait with tiered timeout (host-runtime API)**:
@@ -363,10 +363,10 @@ Note: Global --backend is required; per-task backend is optional
 
 3. **Check process without killing**:
    ```bash
-   ps aux | grep code-router | grep -v grep
+   ps aux | grep code-dispatcher | grep -v grep
    ```
 
-**Why:** code-router tasks often take 5-120 minutes. Killing them wastes API costs and loses progress.
+**Why:** code-dispatcher tasks often take 5-120 minutes. Killing them wastes API costs and loses progress.
 
 ## Emergency Stop (User-Requested Only)
 
@@ -378,23 +378,23 @@ Note: Global --backend is required; per-task backend is optional
 1. **Graceful stop wrapper first**:
    ```bash
    # Inspect running wrapper processes
-   pgrep -fa code-router
+   pgrep -fa code-dispatcher
 
    # Soft interrupt first
-   pkill -INT -f '(^|/)code-router( |$)'
+   pkill -INT -f '(^|/)code-dispatcher( |$)'
    ```
 
 2. **Escalate only if still running**:
    ```bash
-   pkill -TERM -f '(^|/)code-router( |$)'
+   pkill -TERM -f '(^|/)code-dispatcher( |$)'
    sleep 2
-   pkill -KILL -f '(^|/)code-router( |$)'
+   pkill -KILL -f '(^|/)code-dispatcher( |$)'
    ```
 
 3. **Cleanup only descendants of the target wrapper PID (safe default)**:
    ```bash
    # Pick target wrapper PID first (example: newest one)
-   WRAPPER_PID=$(pgrep -n -f '(^|/)code-router( |$)')
+   WRAPPER_PID=$(pgrep -n -f '(^|/)code-dispatcher( |$)')
 
    # TERM direct children of this wrapper only
    pkill -TERM -P "$WRAPPER_PID" 2>/dev/null || true
@@ -406,6 +406,6 @@ Note: Global --backend is required; per-task backend is optional
 
 4. **Post-check**:
    ```bash
-   pgrep -fa code-router
+   pgrep -fa code-dispatcher
    pgrep -fa 'codex|claude|gemini'
    ```

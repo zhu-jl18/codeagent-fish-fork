@@ -141,10 +141,10 @@ func TestRuntimeEnvForBackend(t *testing.T) {
 		}
 	})
 
-	t.Run("filters router control keys", func(t *testing.T) {
+	t.Run("filters dispatcher control keys", func(t *testing.T) {
 		setRuntimeSettingsForTest(map[string]string{
-			"CODE_ROUTER_SKIP_PERMISSIONS": "false",
-			"CODE_ROUTER_TIMEOUT":          "7200",
+			"CODE_DISPATCHER_SKIP_PERMISSIONS": "false",
+			"CODE_DISPATCHER_TIMEOUT":          "7200",
 			"ANTHROPIC_API_KEY":            "secret",
 			"FOO":                          "bar",
 		})
@@ -154,11 +154,11 @@ func TestRuntimeEnvForBackend(t *testing.T) {
 		if got["ANTHROPIC_API_KEY"] != "secret" || got["FOO"] != "bar" {
 			t.Fatalf("got %v, want ANTHROPIC_API_KEY/FOO", got)
 		}
-		if _, ok := got["CODE_ROUTER_TIMEOUT"]; ok {
-			t.Fatalf("got %v, control key CODE_ROUTER_TIMEOUT should be filtered", got)
+		if _, ok := got["CODE_DISPATCHER_TIMEOUT"]; ok {
+			t.Fatalf("got %v, control key CODE_DISPATCHER_TIMEOUT should be filtered", got)
 		}
-		if _, ok := got["CODE_ROUTER_SKIP_PERMISSIONS"]; ok {
-			t.Fatalf("got %v, control key CODE_ROUTER_SKIP_PERMISSIONS should be filtered", got)
+		if _, ok := got["CODE_DISPATCHER_SKIP_PERMISSIONS"]; ok {
+			t.Fatalf("got %v, control key CODE_DISPATCHER_SKIP_PERMISSIONS should be filtered", got)
 		}
 	})
 

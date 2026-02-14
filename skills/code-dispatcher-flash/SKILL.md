@@ -1,39 +1,39 @@
 ---
-name: code-router-flash
-description: Execute code-router for multi-backend AI code tasks. Use when the user explicitly requests a specific backend (Codex, Claude, or Gemini), mentions code-router, or when a skill or command definition declares a dependency on this skill. Supports pluggable backends (codex/claude/gemini), parallel task execution with DAG scheduling, session resume, and structured output.
+name: code-dispatcher-flash
+description: Execute code-dispatcher for multi-backend AI code tasks. Use when the user explicitly requests a specific backend (Codex, Claude, or Gemini), mentions code-dispatcher, or when a skill or command definition declares a dependency on this skill. Supports pluggable backends (codex/claude/gemini), parallel task execution with DAG scheduling, session resume, and structured output.
 ---
 
-# code-router Usage
+# code-dispatcher Usage
 
 ## Command Forms
 
 **New task (HEREDOC, recommended):**
 ```bash
-code-router --backend codex - [working_dir] <<'EOF'
+code-dispatcher --backend codex - [working_dir] <<'EOF'
 <task content>
 EOF
 ```
 
 **New task (inline):**
 ```bash
-code-router --backend codex "simple task" [working_dir]
+code-dispatcher --backend codex "simple task" [working_dir]
 ```
 
 **Resume (HEREDOC):**
 ```bash
-code-router --backend codex resume <session_id> - <<'EOF'
+code-dispatcher --backend codex resume <session_id> - <<'EOF'
 <follow-up task>
 EOF
 ```
 
 **Resume (inline):**
 ```bash
-code-router --backend claude resume <session_id> "follow-up task"
+code-dispatcher --backend claude resume <session_id> "follow-up task"
 ```
 
 **Parallel:**
 ```bash
-code-router --parallel --backend codex [--full-output] <<'EOF'
+code-dispatcher --parallel --backend codex [--full-output] <<'EOF'
 ---TASK---
 id: <unique_id>
 [metadata fields]
@@ -47,8 +47,8 @@ EOF
 
 **Utility:**
 ```bash
-code-router --help
-code-router --cleanup          # Remove orphaned log files from temp dir
+code-dispatcher --help
+code-dispatcher --cleanup          # Remove orphaned log files from temp dir
 ```
 
 ## Parameters
@@ -128,18 +128,18 @@ layer 2:      task3             (waits for both)
 
 ## Critical Rules
 
-**NEVER kill code-router processes by default.** Long-running tasks (5–120 min) are normal.
+**NEVER kill code-dispatcher processes by default.** Long-running tasks (5–120 min) are normal.
 
 1. **Check task status via log file:**
    ```bash
    # Log path is printed to stderr at startup
-   # Format: $TMPDIR/code-router-{PID}[-{taskID}].log
-   tail -f "$TMPDIR"/code-router-*.log
+   # Format: $TMPDIR/code-dispatcher-{PID}[-{taskID}].log
+   tail -f "$TMPDIR"/code-dispatcher-*.log
    ```
 
 2. **Check process without killing:**
    ```bash
-   ps aux | grep code-router | grep -v grep
+   ps aux | grep code-dispatcher | grep -v grep
    ```
 
 3. **Set tool-call timeout by task complexity:**
@@ -161,20 +161,20 @@ Kill/terminate is allowed **only when the user explicitly requests it**. Do not 
 
 1. **Graceful stop wrapper first:**
    ```bash
-   pgrep -fa code-router
-   pkill -INT -f '(^|/)code-router( |$)'
+   pgrep -fa code-dispatcher
+   pkill -INT -f '(^|/)code-dispatcher( |$)'
    ```
 
 2. **Escalate only if still running:**
    ```bash
-   pkill -TERM -f '(^|/)code-router( |$)'
+   pkill -TERM -f '(^|/)code-dispatcher( |$)'
    sleep 2
-   pkill -KILL -f '(^|/)code-router( |$)'
+   pkill -KILL -f '(^|/)code-dispatcher( |$)'
    ```
 
 3. **Cleanup only descendants of target wrapper PID:**
    ```bash
-   WRAPPER_PID=$(pgrep -n -f '(^|/)code-router( |$)')
+   WRAPPER_PID=$(pgrep -n -f '(^|/)code-dispatcher( |$)')
    pkill -TERM -P "$WRAPPER_PID" 2>/dev/null || true
    sleep 2
    pkill -KILL -P "$WRAPPER_PID" 2>/dev/null || true
@@ -182,6 +182,6 @@ Kill/terminate is allowed **only when the user explicitly requests it**. Do not 
 
 4. **Post-check:**
    ```bash
-   pgrep -fa code-router
+   pgrep -fa code-dispatcher
    pgrep -fa 'codex|claude|gemini'
    ```

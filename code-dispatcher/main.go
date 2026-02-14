@@ -110,7 +110,7 @@ func main() {
 
 // run is the main logic, returns exit code for testability
 func run() (exitCode int) {
-	name := currentRouterName()
+	name := currentDispatcherName()
 	// Handle --help first (no logger needed)
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
@@ -570,8 +570,8 @@ func runCleanupHook() {
 }
 
 func printHelp() {
-	name := currentRouterName()
-	help := fmt.Sprintf(`%[1]s - Go router for AI CLI backends
+	name := currentDispatcherName()
+	help := fmt.Sprintf(`%[1]s - Go dispatcher for AI CLI backends
 
 Usage:
 	%[1]s --backend <backend> "task" [workdir]
@@ -596,14 +596,14 @@ Parallel mode examples:
 	%[1]s --parallel --backend gemini < tasks.txt
 
 		Prompt Injection (default-on):
-			Prompt file path: ~/.code-router/prompts/<backend>-prompt.md
+			Prompt file path: ~/.code-dispatcher/prompts/<backend>-prompt.md
 		    Backends: codex | claude | gemini
 		    Empty/missing prompt files behave like no injection.
 
 	Runtime Config:
-	    ~/.code-router/.env (single source of truth)
-	    Supported keys include: CODE_ROUTER_TIMEOUT, CODE_ROUTER_ASCII_MODE,
-	    CODE_ROUTER_MAX_PARALLEL_WORKERS, CODE_ROUTER_LOGGER_CLOSE_TIMEOUT_MS
+	    ~/.code-dispatcher/.env (single source of truth)
+	    Supported keys include: CODE_DISPATCHER_TIMEOUT, CODE_DISPATCHER_ASCII_MODE,
+	    CODE_DISPATCHER_MAX_PARALLEL_WORKERS, CODE_DISPATCHER_LOGGER_CLOSE_TIMEOUT_MS
 
 Exit Codes:
     0    Success

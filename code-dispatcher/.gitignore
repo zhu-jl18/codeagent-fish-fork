@@ -1,6 +1,6 @@
 # Build artifacts
-code-router
-code-router.exe
+code-dispatcher
+code-dispatcher.exe
 *.test
 
 # Coverage reports

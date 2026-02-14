@@ -13,13 +13,13 @@ AskUserQuestion (backend selection)
   ↓
 AskUserQuestion (requirements clarification)
   ↓
-code-router analysis (plan mode + task typing + UI auto-detection)
+code-dispatcher analysis (plan mode + task typing + UI auto-detection)
   ↓
 dev-plan-generator (create dev doc)
   ↓
-code-router concurrent development (2–5 tasks, backend routing)
+code-dispatcher concurrent development (2–5 tasks, backend routing)
   ↓
-code-router testing & verification (≥90% coverage)
+code-dispatcher testing & verification (≥90% coverage)
   ↓
 Done (generate summary)
 ```
@@ -39,8 +39,8 @@ Done (generate summary)
 - No scoring system, no complex logic
 - 2–3 rounds of Q&A until the requirement is clear
 
-### 2. code-router Analysis + Task Typing + UI Detection
-- Call code-router to analyze the request in plan mode style
+### 2. code-dispatcher Analysis + Task Typing + UI Detection
+- Call code-dispatcher to analyze the request in plan mode style
 - Extract: core functions, technical points, task list (2–5 items)
 - For each task, assign exactly one type: `default` / `ui` / `quick-fix`
 - UI auto-detection: needs UI work when task involves style assets (.css, .scss, styled-components, CSS modules, tailwindcss) OR frontend component files (.tsx, .jsx, .vue); output yes/no plus evidence
@@ -63,7 +63,7 @@ Done (generate summary)
 - Conflicting tasks → run serially
 
 ### 5. Testing & Verification
-- Each code-router task:
+- Each code-dispatcher task:
   - Implements the feature
   - Writes tests
   - Runs coverage
@@ -94,7 +94,7 @@ Only one file—minimal and clear.
 
 ### Tools
 - **AskUserQuestion**: interactive requirement clarification
-- **code-router skill**: analysis, development, testing; supports `--backend` for `codex` / `claude` / `gemini`
+- **code-dispatcher skill**: analysis, development, testing; supports `--backend` for `codex` / `claude` / `gemini`
 - **dev-plan-generator agent**: generate dev doc (subagent via Task tool, saves context)
 
 ## Backend Selection & Routing
@@ -118,11 +118,11 @@ Only one file—minimal and clear.
 ### ✅ Concurrency
 - Tasks split based on natural functional boundaries
 - Auto-detect dependencies and conflicts
-- code-router executes independently with optimal backend
+- code-dispatcher executes independently with optimal backend
 
 ### ✅ Quality Assurance
 - Enforces 90% coverage
-- code-router tests and verifies its own work
+- code-dispatcher tests and verifies its own work
 - Automatic retry on failure
 
 ## Example
@@ -141,7 +141,7 @@ A: Email + password
 Q: Should login be remembered?
 A: Yes, use JWT token
 
-# Step 2: code-router analysis
+# Step 2: code-dispatcher analysis
 Output:
 - Core: email/password login + JWT auth
 - Task 1: Backend API (type=default)
@@ -184,7 +184,7 @@ Minimal structure, only three files.
 1. **KISS**: keep it simple
 2. **Disposable**: no persistent config
 3. **Quality first**: enforce 90% coverage
-4. **Concurrency first**: leverage code-router
+4. **Concurrency first**: leverage code-dispatcher
 5. **No legacy baggage**: clean-slate design
 
 ---

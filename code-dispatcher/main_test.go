@@ -1078,35 +1078,35 @@ func TestBackendParseArgs_NewMode(t *testing.T) {
 	}{
 		{
 			name: "simple task",
-			args: []string{"code-router", "--backend", "codex", "analyze code"},
+			args: []string{"code-dispatcher", "--backend", "codex", "analyze code"},
 			want: &Config{Mode: "new", Task: "analyze code", WorkDir: ".", ExplicitStdin: false, Backend: defaultBackendName},
 		},
 		{
 			name: "task with workdir",
-			args: []string{"code-router", "--backend", "codex", "analyze code", "/path/to/dir"},
+			args: []string{"code-dispatcher", "--backend", "codex", "analyze code", "/path/to/dir"},
 			want: &Config{Mode: "new", Task: "analyze code", WorkDir: "/path/to/dir", ExplicitStdin: false, Backend: defaultBackendName},
 		},
 		{
 			name: "explicit stdin mode",
-			args: []string{"code-router", "--backend", "codex", "-"},
+			args: []string{"code-dispatcher", "--backend", "codex", "-"},
 			want: &Config{Mode: "new", Task: "-", WorkDir: ".", ExplicitStdin: true, Backend: defaultBackendName},
 		},
 		{
 			name: "stdin with workdir",
-			args: []string{"code-router", "--backend", "codex", "-", "/some/dir"},
+			args: []string{"code-dispatcher", "--backend", "codex", "-", "/some/dir"},
 			want: &Config{Mode: "new", Task: "-", WorkDir: "/some/dir", ExplicitStdin: true, Backend: defaultBackendName},
 		},
 		{
 			name:    "stdin with dash workdir rejected",
-			args:    []string{"code-router", "--backend", "codex", "-", "-"},
+			args:    []string{"code-dispatcher", "--backend", "codex", "-", "-"},
 			wantErr: true,
 		},
 		{
 			name:    "missing backend flag",
-			args:    []string{"code-router", "analyze code"},
+			args:    []string{"code-dispatcher", "analyze code"},
 			wantErr: true,
 		},
-		{name: "no args", args: []string{"code-router"}, wantErr: true},
+		{name: "no args", args: []string{"code-dispatcher"}, wantErr: true},
 	}
 
 	for _, tt := range tests {
@@ -1150,25 +1150,25 @@ func TestBackendParseArgs_ResumeMode(t *testing.T) {
 	}{
 		{
 			name: "resume with task",
-			args: []string{"code-router", "--backend", "codex", "resume", "session-123", "continue task"},
+			args: []string{"code-dispatcher", "--backend", "codex", "resume", "session-123", "continue task"},
 			want: &Config{Mode: "resume", SessionID: "session-123", Task: "continue task", WorkDir: ".", ExplicitStdin: false, Backend: defaultBackendName},
 		},
 		{
 			name: "resume with workdir",
-			args: []string{"code-router", "--backend", "codex", "resume", "session-456", "task", "/work"},
+			args: []string{"code-dispatcher", "--backend", "codex", "resume", "session-456", "task", "/work"},
 			want: &Config{Mode: "resume", SessionID: "session-456", Task: "task", WorkDir: "/work", ExplicitStdin: false, Backend: defaultBackendName},
 		},
 		{
 			name: "resume with stdin",
-			args: []string{"code-router", "--backend", "codex", "resume", "session-789", "-"},
+			args: []string{"code-dispatcher", "--backend", "codex", "resume", "session-789", "-"},
 			want: &Config{Mode: "resume", SessionID: "session-789", Task: "-", WorkDir: ".", ExplicitStdin: true, Backend: defaultBackendName},
 		},
-		{name: "resume missing session_id", args: []string{"code-router", "--backend", "codex", "resume"}, wantErr: true},
-		{name: "resume missing task", args: []string{"code-router", "--backend", "codex", "resume", "session-123"}, wantErr: true},
-		{name: "resume empty session_id", args: []string{"code-router", "--backend", "codex", "resume", "", "task"}, wantErr: true},
-		{name: "resume whitespace session_id", args: []string{"code-router", "--backend", "codex", "resume", "   ", "task"}, wantErr: true},
-		{name: "resume with dash workdir rejected", args: []string{"code-router", "--backend", "codex", "resume", "session-123", "task", "-"}, wantErr: true},
-		{name: "resume missing backend", args: []string{"code-router", "resume", "session-123", "task"}, wantErr: true},
+		{name: "resume missing session_id", args: []string{"code-dispatcher", "--backend", "codex", "resume"}, wantErr: true},
+		{name: "resume missing task", args: []string{"code-dispatcher", "--backend", "codex", "resume", "session-123"}, wantErr: true},
+		{name: "resume empty session_id", args: []string{"code-dispatcher", "--backend", "codex", "resume", "", "task"}, wantErr: true},
+		{name: "resume whitespace session_id", args: []string{"code-dispatcher", "--backend", "codex", "resume", "   ", "task"}, wantErr: true},
+		{name: "resume with dash workdir rejected", args: []string{"code-dispatcher", "--backend", "codex", "resume", "session-123", "task", "-"}, wantErr: true},
+		{name: "resume missing backend", args: []string{"code-dispatcher", "resume", "session-123", "task"}, wantErr: true},
 	}
 
 	for _, tt := range tests {
@@ -1203,32 +1203,32 @@ func TestBackendParseArgs_BackendFlag(t *testing.T) {
 	}{
 		{
 			name: "claude backend",
-			args: []string{"code-router", "--backend", "claude", "task"},
+			args: []string{"code-dispatcher", "--backend", "claude", "task"},
 			want: "claude",
 		},
 		{
 			name: "gemini resume",
-			args: []string{"code-router", "--backend", "gemini", "resume", "sid", "task"},
+			args: []string{"code-dispatcher", "--backend", "gemini", "resume", "sid", "task"},
 			want: "gemini",
 		},
 		{
 			name: "backend equals syntax",
-			args: []string{"code-router", "--backend=claude", "task"},
+			args: []string{"code-dispatcher", "--backend=claude", "task"},
 			want: "claude",
 		},
 		{
 			name:    "missing backend value",
-			args:    []string{"code-router", "--backend"},
+			args:    []string{"code-dispatcher", "--backend"},
 			wantErr: true,
 		},
 		{
 			name:    "backend equals missing value",
-			args:    []string{"code-router", "--backend=", "task"},
+			args:    []string{"code-dispatcher", "--backend=", "task"},
 			wantErr: true,
 		},
 		{
 			name:    "backend required",
-			args:    []string{"code-router", "task"},
+			args:    []string{"code-dispatcher", "task"},
 			wantErr: true,
 		},
 	}
@@ -1254,35 +1254,35 @@ func TestBackendParseArgs_BackendFlag(t *testing.T) {
 }
 
 func TestBackendParseArgs_ModelFlagRejected(t *testing.T) {
-	os.Args = []string{"code-router", "--model", "opus", "task"}
+	os.Args = []string{"code-dispatcher", "--model", "opus", "task"}
 	if _, err := parseArgs(); err == nil {
 		t.Fatalf("expected --model to be rejected, got nil")
 	}
 }
 
 func TestBackendParseArgs_ReasoningEffortFlagRejected(t *testing.T) {
-	os.Args = []string{"code-router", "--reasoning-effort", "low", "task"}
+	os.Args = []string{"code-dispatcher", "--reasoning-effort", "low", "task"}
 	if _, err := parseArgs(); err == nil {
 		t.Fatalf("expected --reasoning-effort to be rejected, got nil")
 	}
 }
 
 func TestBackendParseArgs_PromptFileFlagRejected(t *testing.T) {
-	os.Args = []string{"code-router", "--prompt-file", "/tmp/prompt.md", "task"}
+	os.Args = []string{"code-dispatcher", "--prompt-file", "/tmp/prompt.md", "task"}
 	if _, err := parseArgs(); err == nil {
 		t.Fatalf("expected --prompt-file to be rejected, got nil")
 	}
 }
 
 func TestBackendParseArgs_UnknownFlagErrors(t *testing.T) {
-	os.Args = []string{"code-router", "--agent", "develop", "task"}
+	os.Args = []string{"code-dispatcher", "--agent", "develop", "task"}
 	if _, err := parseArgs(); err == nil {
 		t.Fatalf("expected unknown flag error, got nil")
 	}
 }
 
 func TestBackendParseArgs_DashDashStopsFlagParsing(t *testing.T) {
-	os.Args = []string{"code-router", "--backend", "claude", "--", "--prompt-file"}
+	os.Args = []string{"code-dispatcher", "--backend", "claude", "--", "--prompt-file"}
 	cfg, err := parseArgs()
 	if err != nil {
 		t.Fatalf("parseArgs() unexpected error: %v", err)
@@ -1296,7 +1296,7 @@ func TestBackendParseArgs_DashDashStopsFlagParsing(t *testing.T) {
 }
 
 func TestBackendParseArgs_SkipPermissionsRejected(t *testing.T) {
-	os.Args = []string{"code-router", "--backend", "codex", "--skip-permissions", "task"}
+	os.Args = []string{"code-dispatcher", "--backend", "codex", "--skip-permissions", "task"}
 	_, err := parseArgs()
 	if err == nil {
 		t.Fatalf("parseArgs() should reject --skip-permissions as unknown flag")
@@ -1610,7 +1610,7 @@ func TestRun_DefaultPromptInjectionPrefixesTask(t *testing.T) {
 			t.Setenv("HOME", home)
 			t.Setenv("USERPROFILE", home)
 
-			promptBase := filepath.Join(home, ".code-router", "prompts")
+			promptBase := filepath.Join(home, ".code-dispatcher", "prompts")
 			promptFile := filepath.Join(promptBase, tt.backend+"-prompt.md")
 			if tt.prompt != "" {
 				if err := os.MkdirAll(filepath.Dir(promptFile), 0o755); err != nil {
@@ -1621,7 +1621,7 @@ func TestRun_DefaultPromptInjectionPrefixesTask(t *testing.T) {
 				}
 			}
 
-			os.Args = []string{"code-router", "--backend", tt.backend, "do"}
+			os.Args = []string{"code-dispatcher", "--backend", tt.backend, "do"}
 			if code := run(); code != 0 {
 				t.Fatalf("run() exit=%d, want 0", code)
 			}
@@ -1896,7 +1896,7 @@ func TestRunResolveTimeout(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_TIMEOUT": tt.envVal})
+			setRuntimeSettingsForTest(map[string]string{"CODE_DISPATCHER_TIMEOUT": tt.envVal})
 			t.Cleanup(resetRuntimeSettingsForTest)
 			got := resolveTimeout()
 			if got != tt.want {
@@ -2467,7 +2467,7 @@ func TestBackendPrintHelp(t *testing.T) {
 	io.Copy(&buf, r)
 	output := buf.String()
 
-	expected := []string{"code-router", "Usage:", "--backend <backend>", "Common mistakes:", "--resume is invalid", "Exit Codes:"}
+	expected := []string{"code-dispatcher", "Usage:", "--backend <backend>", "Common mistakes:", "--resume is invalid", "Exit Codes:"}
 	for _, phrase := range expected {
 		if !strings.Contains(output, phrase) {
 			t.Errorf("printHelp() missing phrase %q", phrase)
@@ -3210,7 +3210,7 @@ id: second
 backend: gemini
 ---CONTENT---
 do two`)
-	os.Args = []string{"code-router", "--backend", "claude", "--parallel"}
+	os.Args = []string{"code-dispatcher", "--backend", "claude", "--parallel"}
 
 	if code := run(); code != 0 {
 		t.Fatalf("run exit = %d, want 0", code)
@@ -3242,7 +3242,7 @@ do one
 id: second
 ---CONTENT---
 do two`)
-	os.Args = []string{"code-router", "--parallel", "--model", "sonnet"}
+	os.Args = []string{"code-dispatcher", "--parallel", "--model", "sonnet"}
 
 	if code := run(); code == 0 {
 		t.Fatalf("expected non-zero exit for --model in parallel mode, got %d", code)
@@ -3253,7 +3253,7 @@ func TestParallelFlag(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"code-router", "--parallel", "--backend", "codex"}
+	os.Args = []string{"code-dispatcher", "--parallel", "--backend", "codex"}
 	jsonInput := `---TASK---
 id: T1
 ---CONTENT---
@@ -3278,7 +3278,7 @@ func TestParallelRequiresBackend(t *testing.T) {
 	defer resetTestHooks()
 	cleanupLogsFn = func() (CleanupStats, error) { return CleanupStats{}, nil }
 
-	os.Args = []string{"code-router", "--parallel"}
+	os.Args = []string{"code-dispatcher", "--parallel"}
 	stdinReader = strings.NewReader(`---TASK---
 id: T1
 ---CONTENT---
@@ -3295,7 +3295,7 @@ func TestRunParallelWithFullOutput(t *testing.T) {
 
 	oldArgs := os.Args
 	t.Cleanup(func() { os.Args = oldArgs })
-	os.Args = []string{"code-router", "--parallel", "--backend", "codex", "--full-output"}
+	os.Args = []string{"code-dispatcher", "--parallel", "--backend", "codex", "--full-output"}
 
 	stdinReader = strings.NewReader(`---TASK---
 id: T1
@@ -3337,7 +3337,7 @@ func TestParallelInvalidBackend(t *testing.T) {
 id: only
 ---CONTENT---
 noop`)
-	os.Args = []string{"code-router", "--parallel", "--backend", "unknown"}
+	os.Args = []string{"code-dispatcher", "--parallel", "--backend", "unknown"}
 
 	if code := run(); code == 0 {
 		t.Fatalf("expected non-zero exit for invalid backend in parallel mode")
@@ -3349,7 +3349,7 @@ func TestParallelTriggersCleanup(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"code-router", "--parallel", "--backend", "codex"}
+	os.Args = []string{"code-dispatcher", "--parallel", "--backend", "codex"}
 	stdinReader = strings.NewReader(`---TASK---
 id: only
 ---CONTENT---
@@ -3377,7 +3377,7 @@ noop`)
 
 func TestRun_Help(t *testing.T) {
 	defer resetTestHooks()
-	os.Args = []string{"code-router", "--help"}
+	os.Args = []string{"code-dispatcher", "--help"}
 	if code := run(); code != 0 {
 		t.Errorf("exit = %d, want 0", code)
 	}
@@ -3385,7 +3385,7 @@ func TestRun_Help(t *testing.T) {
 
 func TestRun_HelpShort(t *testing.T) {
 	defer resetTestHooks()
-	os.Args = []string{"code-router", "-h"}
+	os.Args = []string{"code-dispatcher", "-h"}
 	if code := run(); code != 0 {
 		t.Errorf("exit = %d, want 0", code)
 	}
@@ -3393,7 +3393,7 @@ func TestRun_HelpShort(t *testing.T) {
 
 func TestRun_HelpDoesNotTriggerCleanup(t *testing.T) {
 	defer resetTestHooks()
-	os.Args = []string{"code-router", "--help"}
+	os.Args = []string{"code-dispatcher", "--help"}
 	cleanupLogsFn = func() (CleanupStats, error) {
 		t.Fatalf("cleanup should not run for --help")
 		return CleanupStats{}, nil
@@ -3478,7 +3478,7 @@ func TestVersionCoverageFullRun(t *testing.T) {
 			return TaskResult{ExitCode: 0}
 		}
 
-		os.Args = []string{"code-router"}
+		os.Args = []string{"code-dispatcher"}
 		if code := run(); code == 0 {
 			t.Fatalf("run exit = %d, want non-zero for missing task", code)
 		}
@@ -3491,12 +3491,12 @@ func TestVersionCoverageFullRun(t *testing.T) {
 		defer resetTestHooks()
 		cleanupLogsFn = func() (CleanupStats, error) { return CleanupStats{}, nil }
 
-		os.Args = []string{"code-router", "--help"}
+		os.Args = []string{"code-dispatcher", "--help"}
 		if code := run(); code != 0 {
 			t.Fatalf("run exit = %d, want 0 for help", code)
 		}
 
-		os.Args = []string{"code-router", "--cleanup"}
+		os.Args = []string{"code-dispatcher", "--cleanup"}
 		if code := run(); code != 0 {
 			t.Fatalf("run exit = %d, want 0 for cleanup", code)
 		}
@@ -3522,7 +3522,7 @@ func TestVersionCoverageFullRun(t *testing.T) {
 
 		stdinReader = strings.NewReader("task line with $ and \\\nnext line with `tick` and \"quote\" and 'single'")
 		isTerminalFn = func() bool { return false }
-		os.Args = []string{"code-router", "--backend", "codex", "-", "/tmp/workdir"}
+		os.Args = []string{"code-dispatcher", "--backend", "codex", "-", "/tmp/workdir"}
 		if code := run(); code != 0 {
 			t.Fatalf("run exit = %d, want 0", code)
 		}
@@ -3549,7 +3549,7 @@ func TestVersionCoverageFullRun(t *testing.T) {
 
 		stdinReader = strings.NewReader("")
 		isTerminalFn = func() bool { return true }
-		os.Args = []string{"code-router", "--backend", "codex", "raw-task"}
+		os.Args = []string{"code-dispatcher", "--backend", "codex", "raw-task"}
 		if code := run(); code != 2 {
 			t.Fatalf("run exit = %d, want 2", code)
 		}
@@ -3577,7 +3577,7 @@ func TestVersionCoverageFullRun(t *testing.T) {
 
 		stdinReader = strings.NewReader(strings.Repeat("x", 900))
 		isTerminalFn = func() bool { return false }
-		os.Args = []string{"code-router", "--backend", "codex", "ignored"}
+		os.Args = []string{"code-dispatcher", "--backend", "codex", "ignored"}
 		if code := run(); code != 0 {
 			t.Fatalf("run exit = %d, want 0 for piped input", code)
 		}
@@ -3591,7 +3591,7 @@ func TestVersionCoverageFullRun(t *testing.T) {
 		}
 
 		stdinReader = errReader{err: errors.New("read-fail")}
-		os.Args = []string{"code-router", "--backend", "codex", "-", "/tmp/workdir"}
+		os.Args = []string{"code-dispatcher", "--backend", "codex", "-", "/tmp/workdir"}
 		if code := run(); code == 0 {
 			t.Fatalf("run exit = %d, want non-zero on stdin read error", code)
 		}
@@ -3615,7 +3615,7 @@ id: second
 dependencies: first
 ---CONTENT---
 do two`)
-		os.Args = []string{"code-router", "--parallel", "--backend", "codex"}
+		os.Args = []string{"code-dispatcher", "--parallel", "--backend", "codex"}
 		if code := run(); code != 0 {
 			t.Fatalf("run exit = %d, want 0", code)
 		}
@@ -3625,13 +3625,13 @@ do two`)
 		defer resetTestHooks()
 		cleanupLogsFn = func() (CleanupStats, error) { return CleanupStats{}, nil }
 
-		os.Args = []string{"code-router", "--parallel", "--backend", "codex", "extra"}
+		os.Args = []string{"code-dispatcher", "--parallel", "--backend", "codex", "extra"}
 		if code := run(); code == 0 {
 			t.Fatalf("run exit = %d, want error for extra args", code)
 		}
 
 		stdinReader = strings.NewReader("invalid format")
-		os.Args = []string{"code-router", "--parallel", "--backend", "codex"}
+		os.Args = []string{"code-dispatcher", "--parallel", "--backend", "codex"}
 		if code := run(); code == 0 {
 			t.Fatalf("run exit = %d, want error for invalid config", code)
 		}
@@ -3651,7 +3651,7 @@ func TestMainWrapperHelp(t *testing.T) {
 	defer resetTestHooks()
 	exitCalled := -1
 	exitFn = func(code int) { exitCalled = code }
-	os.Args = []string{"code-router", "--help"}
+	os.Args = []string{"code-dispatcher", "--help"}
 	main()
 	if exitCalled != 0 {
 		t.Fatalf("main exit = %d, want 0", exitCalled)
@@ -3665,8 +3665,8 @@ func TestBackendCleanupMode_Success(t *testing.T) {
 			Scanned:      5,
 			Deleted:      3,
 			Kept:         2,
-			DeletedFiles: []string{"code-router-111.log", "code-router-222.log", "code-router-333.log"},
-			KeptFiles:    []string{"code-router-444.log", "code-router-555.log"},
+			DeletedFiles: []string{"code-dispatcher-111.log", "code-dispatcher-222.log", "code-dispatcher-333.log"},
+			KeptFiles:    []string{"code-dispatcher-444.log", "code-dispatcher-555.log"},
 		}, nil
 	}
 
@@ -3677,7 +3677,7 @@ func TestBackendCleanupMode_Success(t *testing.T) {
 	if exitCode != 0 {
 		t.Fatalf("exit = %d, want 0", exitCode)
 	}
-	want := "Cleanup completed\nFiles scanned: 5\nFiles deleted: 3\n  - code-router-111.log\n  - code-router-222.log\n  - code-router-333.log\nFiles kept: 2\n  - code-router-444.log\n  - code-router-555.log\n"
+	want := "Cleanup completed\nFiles scanned: 5\nFiles deleted: 3\n  - code-dispatcher-111.log\n  - code-dispatcher-222.log\n  - code-dispatcher-333.log\nFiles kept: 2\n  - code-dispatcher-444.log\n  - code-dispatcher-555.log\n"
 	if output != want {
 		t.Fatalf("output = %q, want %q", output, want)
 	}
@@ -3691,7 +3691,7 @@ func TestBackendCleanupMode_SuccessWithErrorsLine(t *testing.T) {
 			Deleted:      1,
 			Kept:         0,
 			Errors:       1,
-			DeletedFiles: []string{"code-router-123.log"},
+			DeletedFiles: []string{"code-dispatcher-123.log"},
 		}, nil
 	}
 
@@ -3702,7 +3702,7 @@ func TestBackendCleanupMode_SuccessWithErrorsLine(t *testing.T) {
 	if exitCode != 0 {
 		t.Fatalf("exit = %d, want 0", exitCode)
 	}
-	want := "Cleanup completed\nFiles scanned: 2\nFiles deleted: 1\n  - code-router-123.log\nFiles kept: 0\nDeletion errors: 1\n"
+	want := "Cleanup completed\nFiles scanned: 2\nFiles deleted: 1\n  - code-dispatcher-123.log\nFiles kept: 0\nDeletion errors: 1\n"
 	if output != want {
 		t.Fatalf("output = %q, want %q", output, want)
 	}
@@ -3771,7 +3771,7 @@ func TestRun_CleanupFlag(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"code-router", "--cleanup"}
+	os.Args = []string{"code-dispatcher", "--cleanup"}
 
 	calls := 0
 	cleanupLogsFn = func() (CleanupStats, error) {
@@ -3800,7 +3800,7 @@ func TestRun_CleanupFlag(t *testing.T) {
 
 func TestRun_NoArgs(t *testing.T) {
 	defer resetTestHooks()
-	os.Args = []string{"code-router"}
+	os.Args = []string{"code-dispatcher"}
 	if code := run(); code != 1 {
 		t.Errorf("exit = %d, want 1", code)
 	}
@@ -3808,7 +3808,7 @@ func TestRun_NoArgs(t *testing.T) {
 
 func TestRun_BackendRequired(t *testing.T) {
 	defer resetTestHooks()
-	os.Args = []string{"code-router", "task"}
+	os.Args = []string{"code-dispatcher", "task"}
 	if code := run(); code != 1 {
 		t.Errorf("exit = %d, want 1", code)
 	}
@@ -3816,7 +3816,7 @@ func TestRun_BackendRequired(t *testing.T) {
 
 func TestRun_ExplicitStdinEmpty(t *testing.T) {
 	defer resetTestHooks()
-	os.Args = []string{"code-router", "--backend", "codex", "-"}
+	os.Args = []string{"code-dispatcher", "--backend", "codex", "-"}
 	stdinReader = strings.NewReader("")
 	isTerminalFn = func() bool { return false }
 	if code := run(); code != 1 {
@@ -3828,7 +3828,7 @@ func TestRun_ExplicitStdinReadError(t *testing.T) {
 	defer resetTestHooks()
 	tempDir := t.TempDir()
 	t.Setenv("TMPDIR", tempDir)
-	logPath := filepath.Join(tempDir, fmt.Sprintf("code-router-%d.log", os.Getpid()))
+	logPath := filepath.Join(tempDir, fmt.Sprintf("code-dispatcher-%d.log", os.Getpid()))
 
 	var logOutput string
 	cleanupHook = func() {
@@ -3838,7 +3838,7 @@ func TestRun_ExplicitStdinReadError(t *testing.T) {
 		}
 	}
 
-	os.Args = []string{"code-router", "--backend", "codex", "-"}
+	os.Args = []string{"code-dispatcher", "--backend", "codex", "-"}
 	stdinReader = errReader{errors.New("broken stdin")}
 	isTerminalFn = func() bool { return false }
 
@@ -3858,7 +3858,7 @@ func TestRun_ExplicitStdinReadError(t *testing.T) {
 
 func TestRun_CommandFails(t *testing.T) {
 	defer resetTestHooks()
-	os.Args = []string{"code-router", "--backend", "codex", "task"}
+	os.Args = []string{"code-dispatcher", "--backend", "codex", "task"}
 	stdinReader = strings.NewReader("")
 	isTerminalFn = func() bool { return true }
 	restore := withBackend("false", func(cfg *Config, targetArg string) []string { return []string{} })
@@ -3870,7 +3870,7 @@ func TestRun_CommandFails(t *testing.T) {
 
 func TestRun_InvalidBackend(t *testing.T) {
 	defer resetTestHooks()
-	os.Args = []string{"code-router", "--backend", "unknown", "task"}
+	os.Args = []string{"code-dispatcher", "--backend", "unknown", "task"}
 	stdinReader = strings.NewReader("")
 	isTerminalFn = func() bool { return true }
 	if code := run(); code == 0 {
@@ -3886,7 +3886,7 @@ func TestRun_SuccessfulExecution(t *testing.T) {
 	defer restore()
 	stdinReader = strings.NewReader("")
 	isTerminalFn = func() bool { return true }
-	os.Args = []string{"code-router", "--backend", "codex", "task"}
+	os.Args = []string{"code-dispatcher", "--backend", "codex", "task"}
 
 	exitCode := run()
 	if exitCode != 0 {
@@ -3908,7 +3908,7 @@ func TestRun_ExplicitStdinSuccess(t *testing.T) {
 	defer restore()
 	stdinReader = strings.NewReader("line1\nline2")
 	isTerminalFn = func() bool { return false }
-	os.Args = []string{"code-router", "--backend", "codex", "-"}
+	os.Args = []string{"code-dispatcher", "--backend", "codex", "-"}
 
 	exitCode := run()
 	restoreStdoutPipe(stdout)
@@ -3925,7 +3925,7 @@ func TestRun_PipedTaskReadError(t *testing.T) {
 	defer resetTestHooks()
 	tempDir := t.TempDir()
 	t.Setenv("TMPDIR", tempDir)
-	logPath := filepath.Join(tempDir, fmt.Sprintf("code-router-%d.log", os.Getpid()))
+	logPath := filepath.Join(tempDir, fmt.Sprintf("code-dispatcher-%d.log", os.Getpid()))
 
 	var logOutput string
 	cleanupHook = func() {
@@ -3939,7 +3939,7 @@ func TestRun_PipedTaskReadError(t *testing.T) {
 	defer restore()
 	isTerminalFn = func() bool { return false }
 	stdinReader = errReader{errors.New("pipe failure")}
-	os.Args = []string{"code-router", "--backend", "codex", "cli-task"}
+	os.Args = []string{"code-dispatcher", "--backend", "codex", "cli-task"}
 
 	exitCode := run()
 	if exitCode != 1 {
@@ -3962,7 +3962,7 @@ func TestRun_PipedTaskSuccess(t *testing.T) {
 	defer restore()
 	isTerminalFn = func() bool { return false }
 	stdinReader = strings.NewReader("piped task text")
-	os.Args = []string{"code-router", "--backend", "codex", "cli-task"}
+	os.Args = []string{"code-dispatcher", "--backend", "codex", "cli-task"}
 
 	exitCode := run()
 	restoreStdoutPipe(stdout)
@@ -3979,7 +3979,7 @@ func TestRun_LoggerLifecycle(t *testing.T) {
 	defer resetTestHooks()
 	tempDir := t.TempDir()
 	t.Setenv("TMPDIR", tempDir)
-	logPath := filepath.Join(tempDir, fmt.Sprintf("code-router-%d.log", os.Getpid()))
+	logPath := filepath.Join(tempDir, fmt.Sprintf("code-dispatcher-%d.log", os.Getpid()))
 
 	stdout := captureStdoutPipe()
 
@@ -3987,7 +3987,7 @@ func TestRun_LoggerLifecycle(t *testing.T) {
 	defer restore()
 	isTerminalFn = func() bool { return true }
 	stdinReader = strings.NewReader("")
-	os.Args = []string{"code-router", "--backend", "codex", "task"}
+	os.Args = []string{"code-dispatcher", "--backend", "codex", "task"}
 
 	var fileExisted bool
 	cleanupHook = func() {
@@ -4022,7 +4022,7 @@ func TestRun_LoggerRemovedOnSignal(t *testing.T) {
 
 	tempDir := t.TempDir()
 	t.Setenv("TMPDIR", tempDir)
-	logPath := filepath.Join(tempDir, fmt.Sprintf("code-router-%d.log", os.Getpid()))
+	logPath := filepath.Join(tempDir, fmt.Sprintf("code-dispatcher-%d.log", os.Getpid()))
 
 	scriptPath := filepath.Join(tempDir, "sleepy-codex.sh")
 	script := `#!/bin/sh
@@ -4037,7 +4037,7 @@ printf '%s\n' '{"type":"item.completed","item":{"type":"agent_message","text":"l
 	defer restore()
 	isTerminalFn = func() bool { return true }
 	stdinReader = strings.NewReader("")
-	os.Args = []string{"code-router", "--backend", "codex", "task"}
+	os.Args = []string{"code-dispatcher", "--backend", "codex", "task"}
 
 	var cancel context.CancelFunc
 	signalNotifyCtxFn = func(parent context.Context, _ ...os.Signal) (context.Context, context.CancelFunc) {
@@ -4093,7 +4093,7 @@ func TestRun_CleanupHookAlwaysCalled(t *testing.T) {
 	defer restore()
 	stdinReader = strings.NewReader("")
 	isTerminalFn = func() bool { return true }
-	os.Args = []string{"code-router", "--backend", "codex", "task"}
+	os.Args = []string{"code-dispatcher", "--backend", "codex", "task"}
 	if exitCode := run(); exitCode != 0 {
 		t.Fatalf("exit = %d, want 0", exitCode)
 	}
@@ -4143,7 +4143,7 @@ func TestRun_CleanupFailureDoesNotBlock(t *testing.T) {
 	backendCommand = createFakeCodexScript(t, "tid-cleanup", "ok")
 	stdinReader = strings.NewReader("")
 	isTerminalFn = func() bool { return true }
-	os.Args = []string{"code-router", "--backend", "codex", "task"}
+	os.Args = []string{"code-dispatcher", "--backend", "codex", "task"}
 
 	if exit := run(); exit != 0 {
 		t.Fatalf("exit = %d, want 0", exit)
@@ -4384,7 +4384,7 @@ func TestParallelLogPathInSerialMode(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Setenv("TMPDIR", tempDir)
 
-	os.Args = []string{"code-router", "--backend", "codex", "do-stuff"}
+	os.Args = []string{"code-dispatcher", "--backend", "codex", "do-stuff"}
 	stdinReader = strings.NewReader("")
 	isTerminalFn = func() bool { return true }
 	backendCommand = "echo"
@@ -4401,7 +4401,7 @@ func TestParallelLogPathInSerialMode(t *testing.T) {
 	if exitCode != 0 {
 		t.Fatalf("run() exit = %d, want 0", exitCode)
 	}
-	expectedLog := filepath.Join(tempDir, fmt.Sprintf("code-router-%d.log", os.Getpid()))
+	expectedLog := filepath.Join(tempDir, fmt.Sprintf("code-dispatcher-%d.log", os.Getpid()))
 	wantLine := fmt.Sprintf("Log: %s", expectedLog)
 	if !strings.Contains(stderr, wantLine) {
 		t.Fatalf("stderr missing %q, got: %q", wantLine, stderr)
@@ -4523,7 +4523,7 @@ func TestRealCmdProcess(t *testing.T) {
 
 func TestRun_CLI_Success(t *testing.T) {
 	defer resetTestHooks()
-	os.Args = []string{"code-router", "--backend", "codex", "do-things"}
+	os.Args = []string{"code-dispatcher", "--backend", "codex", "do-things"}
 	stdinReader = strings.NewReader("")
 	isTerminalFn = func() bool { return true }
 
@@ -4560,7 +4560,7 @@ func TestResolveMaxParallelWorkers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_MAX_PARALLEL_WORKERS": tt.envValue})
+			setRuntimeSettingsForTest(map[string]string{"CODE_DISPATCHER_MAX_PARALLEL_WORKERS": tt.envValue})
 			t.Cleanup(resetRuntimeSettingsForTest)
 
 			got := resolveMaxParallelWorkers()

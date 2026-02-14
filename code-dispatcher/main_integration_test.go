@@ -211,7 +211,7 @@ id: E
 ---CONTENT---
 task-e`
 	stdinReader = bytes.NewReader([]byte(input))
-	os.Args = []string{"code-router", "--parallel", "--backend", "codex"}
+	os.Args = []string{"code-dispatcher", "--parallel", "--backend", "codex"}
 
 	var mu sync.Mutex
 	starts := make(map[string]time.Time)
@@ -314,7 +314,7 @@ dependencies: A
 ---CONTENT---
 b`
 	stdinReader = bytes.NewReader([]byte(input))
-	os.Args = []string{"code-router", "--parallel", "--backend", "codex"}
+	os.Args = []string{"code-dispatcher", "--parallel", "--backend", "codex"}
 
 	exitCode := 0
 	output := captureStdout(t, func() {
@@ -365,7 +365,7 @@ id: beta
 ---CONTENT---
 task-beta`
 	stdinReader = bytes.NewReader([]byte(input))
-	os.Args = []string{"code-router", "--parallel", "--backend", "codex"}
+	os.Args = []string{"code-dispatcher", "--parallel", "--backend", "codex"}
 
 	var exitCode int
 	output := captureStdout(t, func() {
@@ -418,9 +418,9 @@ id: d
 ---CONTENT---
 ok-d`
 	stdinReader = bytes.NewReader([]byte(input))
-	os.Args = []string{"code-router", "--parallel", "--backend", "codex"}
+	os.Args = []string{"code-dispatcher", "--parallel", "--backend", "codex"}
 
-	expectedLog := filepath.Join(tempDir, fmt.Sprintf("code-router-%d.log", os.Getpid()))
+	expectedLog := filepath.Join(tempDir, fmt.Sprintf("code-dispatcher-%d.log", os.Getpid()))
 
 	origRun := runParallelTaskFn
 	runParallelTaskFn = func(task TaskSpec, timeout int) TaskResult {
@@ -474,9 +474,9 @@ ok-d`
 
 	// After parallel log isolation fix, each task has its own log file
 	expectedLines := map[string]struct{}{
-		fmt.Sprintf("Task a: Log: %s", filepath.Join(tempDir, fmt.Sprintf("code-router-%d-a.log", os.Getpid()))): {},
-		fmt.Sprintf("Task b: Log: %s", filepath.Join(tempDir, fmt.Sprintf("code-router-%d-b.log", os.Getpid()))): {},
-		fmt.Sprintf("Task d: Log: %s", filepath.Join(tempDir, fmt.Sprintf("code-router-%d-d.log", os.Getpid()))): {},
+		fmt.Sprintf("Task a: Log: %s", filepath.Join(tempDir, fmt.Sprintf("code-dispatcher-%d-a.log", os.Getpid()))): {},
+		fmt.Sprintf("Task b: Log: %s", filepath.Join(tempDir, fmt.Sprintf("code-dispatcher-%d-b.log", os.Getpid()))): {},
+		fmt.Sprintf("Task d: Log: %s", filepath.Join(tempDir, fmt.Sprintf("code-dispatcher-%d-d.log", os.Getpid()))): {},
 	}
 
 	if len(taskLines) != len(expectedLines) {
@@ -494,7 +494,7 @@ func TestRunNonParallelOutputsIncludeLogPathsIntegration(t *testing.T) {
 	defer resetTestHooks()
 
 	tempDir := setTempDirEnv(t, t.TempDir())
-	os.Args = []string{"code-router", "--backend", "codex", "integration-log-check"}
+	os.Args = []string{"code-dispatcher", "--backend", "codex", "integration-log-check"}
 	stdinReader = strings.NewReader("")
 	isTerminalFn = func() bool { return true }
 	backendCommand = "echo"
@@ -512,7 +512,7 @@ func TestRunNonParallelOutputsIncludeLogPathsIntegration(t *testing.T) {
 	if exitCode != 0 {
 		t.Fatalf("run() exit=%d, want 0", exitCode)
 	}
-	expectedLog := filepath.Join(tempDir, fmt.Sprintf("code-router-%d.log", os.Getpid()))
+	expectedLog := filepath.Join(tempDir, fmt.Sprintf("code-dispatcher-%d.log", os.Getpid()))
 	wantLine := fmt.Sprintf("Log: %s", expectedLog)
 	if !strings.Contains(stderr, wantLine) {
 		t.Fatalf("stderr missing %q, got: %q", wantLine, stderr)
@@ -558,7 +558,7 @@ id: E
 ---CONTENT---
 ok-e`
 	stdinReader = bytes.NewReader([]byte(input))
-	os.Args = []string{"code-router", "--parallel", "--backend", "codex"}
+	os.Args = []string{"code-dispatcher", "--parallel", "--backend", "codex"}
 
 	var exitCode int
 	output := captureStdout(t, func() {
@@ -623,14 +623,14 @@ func TestRunParallelTimeoutPropagation(t *testing.T) {
 		return TaskResult{TaskID: task.ID, ExitCode: 124, Error: "timeout"}
 	}
 
-	setRuntimeSettingsForTest(map[string]string{"CODE_ROUTER_TIMEOUT": "1"})
+	setRuntimeSettingsForTest(map[string]string{"CODE_DISPATCHER_TIMEOUT": "1"})
 	t.Cleanup(resetRuntimeSettingsForTest)
 	input := `---TASK---
 id: T
 ---CONTENT---
 slow`
 	stdinReader = bytes.NewReader([]byte(input))
-	os.Args = []string{"code-router", "--parallel", "--backend", "codex"}
+	os.Args = []string{"code-dispatcher", "--parallel", "--backend", "codex"}
 
 	exitCode := 0
 	output := captureStdout(t, func() {
@@ -694,11 +694,11 @@ func TestRunStartupCleanupRemovesOrphansEndToEnd(t *testing.T) {
 
 	tempDir := setTempDirEnv(t, t.TempDir())
 
-	orphanA := createTempLog(t, tempDir, "code-router-5001.log")
-	orphanB := createTempLog(t, tempDir, "code-router-5002-extra.log")
-	orphanC := createTempLog(t, tempDir, "code-router-5003-suffix.log")
+	orphanA := createTempLog(t, tempDir, "code-dispatcher-5001.log")
+	orphanB := createTempLog(t, tempDir, "code-dispatcher-5002-extra.log")
+	orphanC := createTempLog(t, tempDir, "code-dispatcher-5003-suffix.log")
 	runningPID := 81234
-	runningLog := createTempLog(t, tempDir, fmt.Sprintf("code-router-%d.log", runningPID))
+	runningLog := createTempLog(t, tempDir, fmt.Sprintf("code-dispatcher-%d.log", runningPID))
 	unrelated := createTempLog(t, tempDir, "wrapper.log")
 
 	stubProcessRunning(t, func(pid int) bool {
@@ -714,7 +714,7 @@ func TestRunStartupCleanupRemovesOrphansEndToEnd(t *testing.T) {
 	backendCommand = createFakeCodexScript(t, "tid-startup", "ok")
 	stdinReader = strings.NewReader("")
 	isTerminalFn = func() bool { return true }
-	os.Args = []string{"code-router", "--backend", "codex", "task"}
+	os.Args = []string{"code-dispatcher", "--backend", "codex", "task"}
 
 	if exit := run(); exit != 0 {
 		t.Fatalf("run() exit=%d, want 0", exit)
@@ -733,14 +733,14 @@ func TestRunStartupCleanupRemovesOrphansEndToEnd(t *testing.T) {
 	}
 }
 
-func TestRunStartupCleanupConcurrentRouters(t *testing.T) {
+func TestRunStartupCleanupConcurrentDispatchers(t *testing.T) {
 	defer resetTestHooks()
 
 	tempDir := setTempDirEnv(t, t.TempDir())
 
 	const totalLogs = 40
 	for i := 0; i < totalLogs; i++ {
-		createTempLog(t, tempDir, fmt.Sprintf("code-router-%d.log", 9000+i))
+		createTempLog(t, tempDir, fmt.Sprintf("code-dispatcher-%d.log", 9000+i))
 	}
 
 	stubProcessRunning(t, func(pid int) bool {
@@ -764,7 +764,7 @@ func TestRunStartupCleanupConcurrentRouters(t *testing.T) {
 	close(start)
 	wg.Wait()
 
-	matches, err := filepath.Glob(filepath.Join(tempDir, "code-router-*.log"))
+	matches, err := filepath.Glob(filepath.Join(tempDir, "code-dispatcher-*.log"))
 	if err != nil {
 		t.Fatalf("glob error: %v", err)
 	}
@@ -778,9 +778,9 @@ func TestRunCleanupFlagEndToEnd_Success(t *testing.T) {
 
 	tempDir := setTempDirEnv(t, t.TempDir())
 
-	staleA := createTempLog(t, tempDir, "code-router-2100.log")
-	staleB := createTempLog(t, tempDir, "code-router-2200-extra.log")
-	keeper := createTempLog(t, tempDir, "code-router-2300.log")
+	staleA := createTempLog(t, tempDir, "code-dispatcher-2100.log")
+	staleB := createTempLog(t, tempDir, "code-dispatcher-2200-extra.log")
+	keeper := createTempLog(t, tempDir, "code-dispatcher-2300.log")
 
 	stubProcessRunning(t, func(pid int) bool {
 		return pid == 2300 || pid == os.Getpid()
@@ -792,7 +792,7 @@ func TestRunCleanupFlagEndToEnd_Success(t *testing.T) {
 		return time.Time{}
 	})
 
-	os.Args = []string{"code-router", "--cleanup"}
+	os.Args = []string{"code-dispatcher", "--cleanup"}
 
 	var exitCode int
 	output := captureStdout(t, func() {
@@ -816,10 +816,10 @@ func TestRunCleanupFlagEndToEnd_Success(t *testing.T) {
 	if !strings.Contains(output, "Files kept: 1") {
 		t.Fatalf("missing 'Files kept: 1' in output: %q", output)
 	}
-	if !strings.Contains(output, "code-router-2100.log") || !strings.Contains(output, "code-router-2200-extra.log") {
+	if !strings.Contains(output, "code-dispatcher-2100.log") || !strings.Contains(output, "code-dispatcher-2200-extra.log") {
 		t.Fatalf("missing deleted file names in output: %q", output)
 	}
-	if !strings.Contains(output, "code-router-2300.log") {
+	if !strings.Contains(output, "code-dispatcher-2300.log") {
 		t.Fatalf("missing kept file names in output: %q", output)
 	}
 
@@ -832,7 +832,7 @@ func TestRunCleanupFlagEndToEnd_Success(t *testing.T) {
 		t.Fatalf("expected kept log to remain, err=%v", err)
 	}
 
-	currentLog := filepath.Join(tempDir, fmt.Sprintf("code-router-%d.log", os.Getpid()))
+	currentLog := filepath.Join(tempDir, fmt.Sprintf("code-dispatcher-%d.log", os.Getpid()))
 	if _, err := os.Stat(currentLog); err == nil {
 		t.Fatalf("cleanup mode should not create new log file %s", currentLog)
 	} else if !os.IsNotExist(err) {
@@ -851,7 +851,7 @@ func TestRunCleanupFlagEndToEnd_FailureDoesNotAffectStartup(t *testing.T) {
 		return CleanupStats{Scanned: 1}, fmt.Errorf("permission denied")
 	}
 
-	os.Args = []string{"code-router", "--cleanup"}
+	os.Args = []string{"code-dispatcher", "--cleanup"}
 
 	var exitCode int
 	errOutput := captureStderr(t, func() {
@@ -868,7 +868,7 @@ func TestRunCleanupFlagEndToEnd_FailureDoesNotAffectStartup(t *testing.T) {
 		t.Fatalf("cleanup called %d times, want 1", calls)
 	}
 
-	currentLog := filepath.Join(tempDir, fmt.Sprintf("code-router-%d.log", os.Getpid()))
+	currentLog := filepath.Join(tempDir, fmt.Sprintf("code-dispatcher-%d.log", os.Getpid()))
 	if _, err := os.Stat(currentLog); err == nil {
 		t.Fatalf("cleanup failure should not create new log file %s", currentLog)
 	} else if !os.IsNotExist(err) {
@@ -881,7 +881,7 @@ func TestRunCleanupFlagEndToEnd_FailureDoesNotAffectStartup(t *testing.T) {
 	backendCommand = createFakeCodexScript(t, "tid-cleanup-e2e", "ok")
 	stdinReader = strings.NewReader("")
 	isTerminalFn = func() bool { return true }
-	os.Args = []string{"code-router", "--backend", "codex", "post-cleanup task"}
+	os.Args = []string{"code-dispatcher", "--backend", "codex", "post-cleanup task"}
 
 	var normalExit int
 	normalOutput := captureStdout(t, func() {

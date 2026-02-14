@@ -533,7 +533,7 @@ func shouldSkipTask(task TaskSpec, failed map[string]TaskResult) (bool, string) 
 
 // getStatusSymbols returns status symbols based on ASCII mode.
 func getStatusSymbols() (success, warning, failed string) {
-	if parseBoolFlag(getEnv("CODE_ROUTER_ASCII_MODE", ""), false) {
+	if parseBoolFlag(getEnv("CODE_DISPATCHER_ASCII_MODE", ""), false) {
 		return "PASS", "WARN", "FAIL"
 	}
 	return "✓", "⚠️", "✗"
@@ -912,7 +912,7 @@ func runTaskWithContext(parentCtx context.Context, taskSpec TaskSpec, backend Ba
 	}
 
 	if !silent {
-		// Note: Empty prefix ensures backend output is logged as-is without any router format.
+		// Note: Empty prefix ensures backend output is logged as-is without any dispatcher format.
 		// This preserves the original stdout/stderr content from codex/claude/gemini backends.
 		// Trade-off: Reduces distinguishability between stdout/stderr in logs, but maintains
 		// output fidelity which is critical for debugging backend-specific issues.

@@ -7,12 +7,12 @@ import (
 )
 
 const (
-	defaultRouterName = "code-router"
+	defaultDispatcherName = "code-dispatcher"
 )
 
 var executablePathFn = os.Executable
 
-func normalizeRouterName(path string) string {
+func normalizeDispatcherName(path string) string {
 	if path == "" {
 		return ""
 	}
@@ -20,44 +20,44 @@ func normalizeRouterName(path string) string {
 	base := filepath.Base(path)
 	base = strings.TrimSuffix(base, ".exe") // tolerate Windows executables
 
-	if base == defaultRouterName {
+	if base == defaultDispatcherName {
 		return base
 	}
 
 	return ""
 }
 
-// currentRouterName resolves the router name based on the invoked binary.
+// currentDispatcherName resolves the dispatcher name based on the invoked binary.
 // Only known names are honored to avoid leaking build/test binary names into logs.
-func currentRouterName() string {
+func currentDispatcherName() string {
 	if len(os.Args) == 0 {
-		return defaultRouterName
+		return defaultDispatcherName
 	}
 
-	if name := normalizeRouterName(os.Args[0]); name != "" {
+	if name := normalizeDispatcherName(os.Args[0]); name != "" {
 		return name
 	}
 
 	execPath, err := executablePathFn()
 	if err == nil {
-		if name := normalizeRouterName(execPath); name != "" {
+		if name := normalizeDispatcherName(execPath); name != "" {
 			return name
 		}
 
 		if resolved, err := filepath.EvalSymlinks(execPath); err == nil {
-			if name := normalizeRouterName(resolved); name != "" {
+			if name := normalizeDispatcherName(resolved); name != "" {
 				return name
 			}
 		}
 	}
 
-	return defaultRouterName
+	return defaultDispatcherName
 }
 
 // logPrefixes returns the set of accepted log name prefixes, including the
-// current router name and legacy aliases.
+// current dispatcher name and legacy aliases.
 func logPrefixes() []string {
-	prefixes := []string{currentRouterName(), defaultRouterName}
+	prefixes := []string{currentDispatcherName(), defaultDispatcherName}
 	seen := make(map[string]struct{}, len(prefixes))
 	var unique []string
 	for _, prefix := range prefixes {
@@ -74,12 +74,12 @@ func logPrefixes() []string {
 }
 
 // primaryLogPrefix returns the preferred filename prefix for log files.
-// Defaults to the current router name when available, otherwise falls back
+// Defaults to the current dispatcher name when available, otherwise falls back
 // to the canonical default name.
 func primaryLogPrefix() string {
 	prefixes := logPrefixes()
 	if len(prefixes) == 0 {
-		return defaultRouterName
+		return defaultDispatcherName
 	}
 	return prefixes[0]
 }

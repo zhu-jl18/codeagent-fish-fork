@@ -16,16 +16,16 @@ type runtimeSettingsOverrideState struct {
 
 var runtimeSettingsOverride runtimeSettingsOverrideState
 
-func resolveRouterHomeDir() string {
+func resolveDispatcherHomeDir() string {
 	home, err := os.UserHomeDir()
 	if err != nil || strings.TrimSpace(home) == "" {
 		return ""
 	}
-	return filepath.Join(home, ".code-router")
+	return filepath.Join(home, ".code-dispatcher")
 }
 
-func resolveRouterEnvFile() string {
-	base := resolveRouterHomeDir()
+func resolveDispatcherEnvFile() string {
+	base := resolveDispatcherHomeDir()
 	if base == "" {
 		return ""
 	}
@@ -33,7 +33,7 @@ func resolveRouterEnvFile() string {
 }
 
 func resolvePromptBaseDir() string {
-	base := resolveRouterHomeDir()
+	base := resolveDispatcherHomeDir()
 	if base == "" {
 		return ""
 	}
@@ -95,7 +95,7 @@ func lookupRuntimeSetting(key string) (string, bool) {
 	}
 	runtimeSettingsOverride.mu.RUnlock()
 
-	settings := loadRuntimeSettingsFile(resolveRouterEnvFile())
+	settings := loadRuntimeSettingsFile(resolveDispatcherEnvFile())
 	value, ok := settings[key]
 	if !ok {
 		return "", false
@@ -115,7 +115,7 @@ func runtimeInjectedEnv() map[string]string {
 	if runtimeSettingsOverride.enabled {
 		out := make(map[string]string)
 		for key, value := range runtimeSettingsOverride.values {
-			if isRouterControlKey(key) {
+			if isDispatcherControlKey(key) {
 				continue
 			}
 			if strings.TrimSpace(key) == "" {
@@ -131,14 +131,14 @@ func runtimeInjectedEnv() map[string]string {
 	}
 	runtimeSettingsOverride.mu.RUnlock()
 
-	settings := loadRuntimeSettingsFile(resolveRouterEnvFile())
+	settings := loadRuntimeSettingsFile(resolveDispatcherEnvFile())
 	if len(settings) == 0 {
 		return nil
 	}
 
 	out := make(map[string]string)
 	for key, value := range settings {
-		if isRouterControlKey(key) {
+		if isDispatcherControlKey(key) {
 			continue
 		}
 		if strings.TrimSpace(key) == "" {
@@ -153,8 +153,8 @@ func runtimeInjectedEnv() map[string]string {
 	return out
 }
 
-func isRouterControlKey(key string) bool {
-	return strings.HasPrefix(key, "CODE_ROUTER_")
+func isDispatcherControlKey(key string) bool {
+	return strings.HasPrefix(key, "CODE_DISPATCHER_")
 }
 
 func setRuntimeSettingsForTest(values map[string]string) {

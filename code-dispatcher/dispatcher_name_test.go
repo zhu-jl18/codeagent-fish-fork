@@ -10,7 +10,7 @@ func TestCurrentWrapperNameFallsBackToExecutable(t *testing.T) {
 	defer resetTestHooks()
 
 	tempDir := t.TempDir()
-	execPath := filepath.Join(tempDir, "code-router")
+	execPath := filepath.Join(tempDir, "code-dispatcher")
 	if err := os.WriteFile(execPath, []byte("#!/bin/true\n"), 0o755); err != nil {
 		t.Fatalf("failed to write fake binary: %v", err)
 	}
@@ -20,7 +20,7 @@ func TestCurrentWrapperNameFallsBackToExecutable(t *testing.T) {
 		return execPath, nil
 	}
 
-	if got := currentRouterName(); got != defaultRouterName {
-		t.Fatalf("currentRouterName() = %q, want %q", got, defaultRouterName)
+	if got := currentDispatcherName(); got != defaultDispatcherName {
+		t.Fatalf("currentDispatcherName() = %q, want %q", got, defaultDispatcherName)
 	}
 }

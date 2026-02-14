@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Uninstaller for code-router runtime assets.
+"""Uninstaller for code-dispatcher runtime assets.
 
 Removes only the files installed by ./install.py and leaves unrelated user files intact.
 """
@@ -11,17 +11,17 @@ import os
 from pathlib import Path
 
 
-DEFAULT_INSTALL_DIR = "~/.code-router"
+DEFAULT_INSTALL_DIR = "~/.code-dispatcher"
 BACKENDS = ("codex", "claude", "gemini")
 LEGACY_PROMPT_FILES = ("copilot-prompt.md",)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Uninstall code-router")
+    p = argparse.ArgumentParser(description="Uninstall code-dispatcher")
     p.add_argument(
         "--install-dir",
         default=DEFAULT_INSTALL_DIR,
-        help="Install directory (default: ~/.code-router)",
+        help="Install directory (default: ~/.code-dispatcher)",
     )
     p.add_argument(
         "-y",
@@ -59,13 +59,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if not args.yes:
-        print(f"About to remove code-router installed files from: {install_dir}")
+        print(f"About to remove code-dispatcher installed files from: {install_dir}")
         print("Proceed? [y/N] ", end="", flush=True)
         if input().strip().lower() not in ("y", "yes"):
             print("Aborted.")
             return 0
 
-    exe_name = "code-router.exe" if os.name == "nt" else "code-router"
+    exe_name = "code-dispatcher.exe" if os.name == "nt" else "code-dispatcher"
 
     targets = [
         install_dir / ".env",
