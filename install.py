@@ -26,7 +26,7 @@ from pathlib import Path
 
 
 DEFAULT_INSTALL_DIR = "~/.code-dispatcher"
-DEFAULT_RELEASE_REPO = "zhu-jl18/code-router"
+DEFAULT_RELEASE_REPO = "zhu-jl18/code-dispatcher"
 DEFAULT_RELEASE_TAG = "latest"
 HTTP_TIMEOUT_SEC = 30
 

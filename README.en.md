@@ -34,7 +34,7 @@ Optional:
 ```bash
 python3 install.py --install-dir ~/.code-dispatcher --force
 python3 install.py --skip-dispatcher
-python3 install.py --repo zhu-jl18/code-router --release-tag latest
+python3 install.py --repo zhu-jl18/code-dispatcher --release-tag latest
 ```
 
 Installer outputs:
