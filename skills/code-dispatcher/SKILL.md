@@ -391,17 +391,17 @@ Note: Global --backend is required; per-task backend is optional
    pkill -KILL -f '(^|/)code-dispatcher( |$)'
    ```
 
-3. **Cleanup only descendants of the target wrapper PID (safe default)**:
+3. **Cleanup only descendants of the target code-dispatcher PID (safe default)**:
    ```bash
-   # Pick target wrapper PID first (example: newest one)
-   WRAPPER_PID=$(pgrep -n -f '(^|/)code-dispatcher( |$)')
+   # Pick target code-dispatcher PID first (example: newest one)
+   DISPATCHER_PID=$(pgrep -n -f '(^|/)code-dispatcher( |$)')
 
-   # TERM direct children of this wrapper only
-   pkill -TERM -P "$WRAPPER_PID" 2>/dev/null || true
+   # TERM direct children of this dispatcher only
+   pkill -TERM -P "$DISPATCHER_PID" 2>/dev/null || true
    sleep 2
 
    # If still present, escalate to KILL for direct children only
-   pkill -KILL -P "$WRAPPER_PID" 2>/dev/null || true
+   pkill -KILL -P "$DISPATCHER_PID" 2>/dev/null || true
    ```
 
 4. **Post-check**:
